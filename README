@@ -1,0 +1,44 @@
+cardutil
+========
+Cardutil is a python library and set of tools for working with payment card messages and files.
+
+The library currently has no dependencies.
+
+Getting started
+---------------
+
+### install
+    $ python setup.py develop
+
+### test
+    $ python setup.py test
+    
+### docs
+    $ pip install sphinx
+    $ sphinx-apidoc -o ./docs/source  ./cardutil 
+    $ make html -C ./docs
+    $ open ./docs/build/html/index.html 
+
+libraries
+---------
+
+### iso8583 
+ISO8583 message parser allows you to read and write ISO8583 messages.
+
+Supports Mastercard PDS field structures.
+
+### mciipm
+Mastercard IPM clearing file processors for
+* block and unblock 1014 blocked IPM and parameter files
+* process VBS format records
+
+
+tools
+-----
+The following command line utilities are installed as part of the package
+
+* **TODO** `mci_ipm_extract` converts Mastercard IPM files to csv
+* **TODO** `mci_ipm_param_encode` changes the encoding of IPM parameter files
+
+
+
