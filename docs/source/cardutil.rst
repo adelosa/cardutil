@@ -1,25 +1,6 @@
 cardutil package
 ================
 
-Submodules
-----------
-
-cardutil.config module
-----------------------
-
-.. automodule:: cardutil.config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-cardutil.hexdump module
------------------------
-
-.. automodule:: cardutil.hexdump
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 cardutil.iso8583 module
 -----------------------
 
@@ -44,11 +25,10 @@ cardutil.outputter module
    :undoc-members:
    :show-inheritance:
 
+cardutil.config module
+----------------------
 
-Module contents
----------------
-
-.. automodule:: cardutil
+.. automodule:: cardutil.config
    :members:
    :undoc-members:
    :show-inheritance:

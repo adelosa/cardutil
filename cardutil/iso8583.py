@@ -1,97 +1,77 @@
-import array
+"""
+The iso8583 module provides ISO8583 message parsing functions.
+See `ISO8583 Wikipedia page <https://en.wikipedia.org/wiki/ISO_8583>`_. for more details.
+
+The parsing functions are modelled on the python standard json library.
+
+The values in the object passed represent the elements of an ISO8583 message.
+
+Object keys that that are recognised by the parser:
+
+* MTI - Message type indicator
+* DE(1-127) - Standard fields
+* PDSxxxx - Mastercard PDS fields
+* TAGxxxx - ICC tag fields
+
+"""
 import binascii
 import datetime
 import decimal
 import logging
 import re
 import struct
-from array import array
 
+from cardutil.BitArray import BitArray
 from cardutil.config import config
 from cardutil.hexdump import hexdump
 
 LOGGER = logging.getLogger(__name__)
 
 
-def dumps(obj, encoding='latin-1', iso_config=None):
+def dumps(obj: dict, encoding='latin-1', iso_config=None):
     """
-    takes dict, returns iso8583 message in provided
+    Serialize obj to a ISO8583 message byte string
+
     :param obj: dict containing message data
-    :param encoding: the encoding to be applied
-    :param iso_config:
-    :return: bytes containing message
+    :param encoding: python text encoding scheme
+    :param iso_config: iso8583 message configuration dict
+    :return: byte string containing ISO8583 message
+
+    >>> import cardutil.iso8583
+    >>> message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
+    >>> cardutil.iso8583.dumps(message_dict)
+    b'1144\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555566667777'
+
     """
     if not iso_config:
         iso_config = config['bit_config']
 
-    output = dict_to_iso8583(obj, iso_config, encoding)
+    output = _dict_to_iso8583(obj, iso_config, encoding)
     return output
 
 
-def loads(b, encoding='latin-1', iso_config=None):
+def loads(b: bytes, encoding='latin-1', iso_config=None):
     """
-    take an iso8583 message, returns dict
+    Deserialise b (byte string) to a python object
+
     :param b: bytes containing message
-    :param encoding:
-    :param iso_config:
+    :param encoding: python text encoding scheme
+    :param iso_config: iso8583 message configuration dictionary
     :return: dict containing message data
+
+    >>> import cardutil.iso8583
+    >>> message_bytes = b'1144\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555566667777'
+    >>> cardutil.iso8583.loads(message_bytes)
+    {'MTI': '1144', 'DE2': '4444555566667777'}
+
     """
     if not iso_config:
         iso_config = config['bit_config']
 
-    return iso8583_to_dict(b, iso_config, encoding)
+    return _iso8583_to_dict(b, iso_config, encoding)
 
 
-class BitArray:
-    """
-    This is a minimal native python replacement for the bitarray module that was used to interpret
-    the file bitmap. The bitarray module is written in c and does not provide binary wheels so
-    forces users to have compilers installed just to install.
-    This small class provides the required functions from that library.
-    """
-    endian = 'big'
-    bytes = b''
-
-    def __init__(self, endian='big'):
-        self.endian = endian
-
-    def frombytes(self, array_bytes):
-        self.bytes = array_bytes
-
-    def tobytes(self):
-        return self.bytes
-
-    def tolist(self):
-        swap_bytes = array('B', self.bytes)
-        if self.endian == 'little':
-            for i, n in enumerate(swap_bytes):
-                swap_bytes[i] = int('{:08b}'.format(n)[::-1], 2)
-        width = len(self.bytes)*8
-        try:
-            swapped_bytes = swap_bytes.tobytes()
-        except AttributeError:  # 2.7 does not recognise .tobytes method. 2.6 does!
-            swapped_bytes = swap_bytes.tostring()
-        bit_list = '{bytes:0{width}b}'.format(bytes=int(binascii.hexlify(swapped_bytes), 16), width=width)
-        return [bit == '1' for bit in bit_list]
-
-    def fromlist(self, bytelist):
-        # https://stackoverflow.com/questions/32675679/convert-binary-string-to-bytearray-in-python-3
-        binary_value = ''.join(['1' if val else '0' for val in bytelist])
-        self.bytes = self.bitstring_to_bytes(binary_value)
-        # Python 3 only..
-        # self.bytes = int(binary_value, 2).to_bytes(len(binary_value) // 8, byteorder='big')
-
-    @staticmethod
-    def bitstring_to_bytes(s):
-        v = int(s, 2)
-        b = bytearray()
-        while v:
-            b.append(v & 0xff)
-            v >>= 8
-        return bytes(b[::-1])
-
-
-def iso8583_to_dict(message, bit_config, encoding='latin-1'):
+def _iso8583_to_dict(message, bit_config, encoding='latin-1'):
     """
     Convert ISO8583 style message to dictionary
 
@@ -123,12 +103,12 @@ def iso8583_to_dict(message, bit_config, encoding='latin-1'):
     return_values["MTI"] = message_type_indicator.decode(encoding)
 
     message_pointer = 0
-    bitmap_list = get_bitmap_list(binary_bitmap)
+    bitmap_list = _get_bitmap_list(binary_bitmap)
 
     for bit in range(2, 128):
         if bitmap_list[bit]:
             LOGGER.debug("processing bit %s", bit)
-            return_message, message_increment = iso8583_to_field(
+            return_message, message_increment = _iso8583_to_field(
                 bit,
                 bit_config[str(bit)],
                 message_data[message_pointer:],
@@ -151,13 +131,13 @@ def iso8583_to_dict(message, bit_config, encoding='latin-1'):
     return return_values
 
 
-def dict_to_iso8583(message, bit_config, encoding='latin-1'):
+def _dict_to_iso8583(message, bit_config, encoding='latin-1'):
     """
     Convert dictionary to ISO8583 message
 
     :param message: dictionary of message elements
     * key = 'MTI' message type indicator
-    * key = 'DEx' data elements
+    * key = 'DE(1-127)' data elements
     * key = 'PDSxxxx' private data fields
     * key = 'TAGxxxx' icc fields
     :param bit_config: dictionary of bit mapping configuration
@@ -172,18 +152,22 @@ def dict_to_iso8583(message, bit_config, encoding='latin-1'):
     bitmap_values = [False] * 128
     bitmap_values[0] = True  # set bit 1 on for presence of bitmap
 
-    # get the pds fields
-    de_pds_fields = [key for key in bit_config if bit_config[key].get('field_processor') == 'PDS']
-    print(de_pds_fields)
-    for de_field in pds_to_de(message):
-        message[f'DE{de_pds_fields.pop()}'] = de_field
+    # get the pds fields from config
+    de_pds_fields = sorted(
+        [int(key) for key in bit_config if bit_config[key].get('field_processor') == 'PDS'], reverse=True)
+    LOGGER.debug(de_pds_fields)
+
+    for de_field_value in _pds_to_de(message):
+        de_field_key = de_pds_fields.pop()
+        LOGGER.debug(f'de{de_field_key}={de_field_value}')
+        message[f'DE{de_field_key}'] = de_field_value
 
     for bit in range(2, 128):
         if message.get('DE' + str(bit)):
             LOGGER.debug(f'processing bit {bit}')
             bitmap_values[bit - 1] = True
             LOGGER.debug(message.get('DE' + str(bit)))
-            output_data += field_to_iso8583(
+            output_data += _field_to_iso8583(
                 bit_config[str(bit)],
                 message.get('DE' + str(bit))
             )
@@ -197,12 +181,12 @@ def dict_to_iso8583(message, bit_config, encoding='latin-1'):
     return output_string
 
 
-def field_to_iso8583(bit_config, field_value, encoding='latin-1'):
+def _field_to_iso8583(bit_config, field_value, encoding='latin-1'):
 
     output = b''
-    field_value = pytype_to_string(field_value, bit_config)
+    field_value = _pytype_to_string(field_value, bit_config)
     field_length = bit_config['field_length']
-    length_size = get_field_length(bit_config)
+    length_size = _get_field_length(bit_config)
     if length_size > 0:
         field_length = len(field_value)
         output += format(field_length, '0' + str(length_size)).encode(encoding)
@@ -210,7 +194,7 @@ def field_to_iso8583(bit_config, field_value, encoding='latin-1'):
     return output
 
 
-def iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
+def _iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
     """
     Processes a message bit element
 
@@ -225,7 +209,7 @@ def iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
 
     field_length = bit_config['field_length']
 
-    length_size = get_field_length(bit_config)
+    length_size = _get_field_length(bit_config)
 
     if length_size > 0:
         field_length_string = message_data[:length_size]
@@ -234,24 +218,22 @@ def iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
 
     field_data = message_data[length_size:length_size + field_length]  # .decode(encoding)
     LOGGER.debug(f'field_data={field_data}')
-    field_processor = get_parameter(bit_config, 'field_processor')
+    field_processor = _get_parameter(bit_config, 'field_processor')
 
     # do ascii conversion except for ICC field
     if field_processor != 'ICC':
-        # if source_format == 'ebcdic':
-        #     field_data = codecs.decode(field_data, "cp500")  # convert_text_eb2asc(field_data)
         field_data = field_data.decode(encoding)
 
     # if field is PAN type, mask the card value
     if field_processor == 'PAN':
-        field_data = mask_pan(field_data)
+        field_data = _pan_mask(field_data)
 
     # if field is PAN type, mask the card value
     if field_processor == 'PAN-PREFIX':
-        field_data = mask_pan(field_data, prefix_only=True)
+        field_data = _pan_prefix(field_data)
 
     # do field conversion to native python type
-    field_data = convert_to_type(field_data, bit_config)
+    field_data = _string_to_pytype(field_data, bit_config)
 
     return_values = dict()
 
@@ -260,20 +242,20 @@ def iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
 
     # if a PDS field, break it down again and add to results
     if field_processor == 'PDS':
-        return_values.update(pds_to_dict(field_data))
+        return_values.update(_pds_to_dict(field_data))
 
     # if a DE43 field, break in down again and add to results
     if field_processor == 'DE43':
-        return_values.update(get_de43_fields(field_data))
+        return_values.update(_get_de43_fields(field_data))
 
     # if ICC field, break into tags
     if field_processor == 'ICC':
-        return_values.update(icc_to_dict(field_data))
+        return_values.update(_icc_to_dict(field_data))
 
     return return_values, field_length + length_size
 
 
-def get_parameter(config, parameter):
+def _get_parameter(config, parameter):
     """
     Checks for parameter value and sets if present
 
@@ -284,21 +266,25 @@ def get_parameter(config, parameter):
     return config[parameter] if config.get(parameter) else ""
 
 
-def mask_pan(field_data, prefix_only=False):
+def _pan_prefix(field_data):
     """
-    Mask a pan number string
+    Get prefix of PAN
+    """
+    return field_data[:9]
+
+
+def _pan_mask(field_data):
+    """
+    Get mask a PAN
 
     :param field_data: unmasked pan
+    :param prefix_only: Set true to get first 9 chars of PAN
     :return: masked pan
     """
-    # if field is PAN type, mask the card value
-    if prefix_only:
-        return field_data[:9]
-    else:
-        return field_data[:6] + ("*" * (len(field_data)-9)) + field_data[len(field_data)-3:len(field_data)]
+    return field_data[:6] + ("*" * (len(field_data)-9)) + field_data[len(field_data)-3:len(field_data)]
 
 
-def convert_to_type(field_data, bit_config):
+def _string_to_pytype(field_data, bit_config):
     """
     Field conversion to native python type
 
@@ -306,7 +292,7 @@ def convert_to_type(field_data, bit_config):
     :param bit_config: Configuration for bit
     :return: data in required type
     """
-    field_python_type = get_parameter(bit_config, 'python_field_type')
+    field_python_type = _get_parameter(bit_config, 'python_field_type')
 
     if field_python_type == "int":
         field_data = int(field_data)
@@ -320,7 +306,7 @@ def convert_to_type(field_data, bit_config):
     return field_data
 
 
-def pytype_to_string(field_data, bit_config):
+def _pytype_to_string(field_data, bit_config):
     """
     convert py type to string for message
 
@@ -328,21 +314,21 @@ def pytype_to_string(field_data, bit_config):
     :param bit_config: Configuration for bit
     :return: data in required type
     """
-    field_python_type = get_parameter(bit_config, 'python_field_type')
+    field_python_type = _get_parameter(bit_config, 'python_field_type')
 
     return_string = field_data
     if field_python_type == "int":
-        return_string = format(field_data, '0' + str(get_parameter(bit_config, 'field_length')))
+        return_string = format(field_data, '0' + str(_get_parameter(bit_config, 'field_length')))
     if field_python_type == "decimal":
-        return_string = format(field_data, '0' + str(get_parameter(bit_config, 'field_length')))
+        return_string = format(field_data, '0' + str(_get_parameter(bit_config, 'field_length')))
     if field_python_type == "long":
-        return_string = format(field_data, '0' + str(get_parameter(bit_config, 'field_length')))
+        return_string = format(field_data, '0' + str(_get_parameter(bit_config, 'field_length')))
     if field_python_type == "datetime":
         return_string = format(field_data, "%y%m%d%H%M%S")
     return return_string
 
 
-def get_field_length(bit_config):
+def _get_field_length(bit_config):
     """
     Determine length of iso8583 style field
 
@@ -359,13 +345,12 @@ def get_field_length(bit_config):
     return length_size
 
 
-def get_bitmap_list(binary_bitmap):
+def _get_bitmap_list(binary_bitmap):
     """
     Get list of bits from binary bitmap
 
     :param binary_bitmap: the binary bitmap to be returned
-    :return: the list containing bit values. Bit 0 contains original binary
-             bitmap
+    :return: the list containing bit values. Bit 0 contains original binary bitmap
     """
     working_bitmap_list = BitArray(endian='big')
     working_bitmap_list.frombytes(binary_bitmap)
@@ -379,11 +364,12 @@ def get_bitmap_list(binary_bitmap):
     return bitmap_list
 
 
-def pds_to_de(dict_values):
+def _pds_to_de(dict_values):
     """
-    takes all the pds fields in dict and builds up pds DE values (usually 48)
+    takes all the pds fields values in dict (PDSxxxx) and creates list of DE strings
+
     :param dict_values: dict containing "PDSxxxx" elements
-    :return: bytes containing pds data
+    :return: list of byte strings containing pds data, or None if no fields
     """
     # get the PDS field keys in order
     keys = sorted([key for key in dict_values if key.startswith('PDS')])
@@ -397,17 +383,19 @@ def pds_to_de(dict_values):
             outputs.append(output)
             output = ''
         output += add_output
-    outputs.append(output)
+    if output:
+        outputs.append(output)
+    LOGGER.debug(f'>pds2de: {outputs}')
+
     return outputs
 
 
-def pds_to_dict(field_data):
+def _pds_to_dict(field_data):
     """
     Get MasterCard pds fields from iso field
 
-    :param field_data: the field containing pds fields
-    :return: dictionary of pds key values
-             key in the form PDSxxxx where x is zero filled number of pds
+    :param field_data: the ISO8583 field containing pds fields
+    :return: dictionary of pds key values. Key in the form PDSxxxx where x is zero filled number of pds
     """
     field_pointer = 0
     return_values = {}
@@ -432,7 +420,7 @@ def pds_to_dict(field_data):
     return return_values
 
 
-def icc_to_dict(field_data):
+def _icc_to_dict(field_data):
     """
     Get de55 fields from message
 
@@ -464,7 +452,7 @@ def icc_to_dict(field_data):
         LOGGER.debug("%s", format(field_tag_display))
         LOGGER.debug(field_length)
 
-        # get the pds data
+        # get the tag data
         de_field_data = field_data[field_pointer+1:field_pointer+field_length+1]
         de_field_data_display = binascii.b2a_hex(de_field_data)
         LOGGER.debug("%s", de_field_data_display)
@@ -476,9 +464,10 @@ def icc_to_dict(field_data):
     return return_values
 
 
-def get_de43_fields(de43_field):
+def _get_de43_fields(de43_field):
     """
     get pds 43 field breakdown
+
     :param de43_field: data of pds 43
     :return: dictionary of pds 43 sub elements
     """

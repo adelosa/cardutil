@@ -4,7 +4,7 @@
 # <-- removing this magic comment breaks Python 3.4 on Windows
 """
 1. Dump binary data to the following text format:
-    .. code-block:: text
+
     00000000: 00 00 00 5B 68 65 78 64  75 6D 70 5D 00 00 00 00  ...[hexdump]....
     00000010: 00 11 22 33 44 55 66 77  88 99 AA BB CC DD EE FF  .."3DUfw........
 

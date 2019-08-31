@@ -1,0 +1,18 @@
+image: python
+pipelines:
+  default:
+    - step:
+        name: python unittests
+        script:
+          - python setup.py test
+    - step:
+        name: deploy package to pypi
+        script:
+          - pipe: atlassian/pypi-publish:0.2.7
+            variables:
+              PYPI_USERNAME: $PYPI_USERNAME
+              PYPI_PASSWORD: $PYPI_TEST_PASSWORD
+              REPOSITORY: 'https://test.pypi.org/legacy/'
+#              # DISTRIBUTIONS: '<string>'
+#              # FOLDER: '<string>'
+#              # DEBUG: '<boolean>'

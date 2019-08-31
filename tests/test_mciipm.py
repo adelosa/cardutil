@@ -1,11 +1,7 @@
 import io
-import tempfile
 import unittest
 
-from cardutil.config import config
-from cardutil.iso8583 import iso8583_to_dict
-from cardutil.mciipm import block_1014, unblock_1014, VbsWriter, VbsReader, change_encoding, change_param_encoding, IpmReader, Unblock
-from cardutil.outputter import dicts_to_csv
+from cardutil.mciipm import VbsWriter, VbsReader, change_encoding, change_param_encoding, IpmReader, IpmWriter
 
 message_ebcdic_raw = (
         '1144'.encode('cp500') +
@@ -23,65 +19,150 @@ message_ascii_raw = (
 
 
 class MciIpmTestCase(unittest.TestCase):
-    def test_process_ebcdic_ipm_file(self):
-        # add 5 records to a list
-        message_list = [message_ebcdic_raw for _ in range(5)]
 
+    def test_real_message_example_ascii(self):
         # create the input ipm file bytes -- test_file
-        with io.BytesIO() as vbs_in, io.BytesIO() as blocked_in, tempfile.TemporaryFile() as vbs_out, io.StringIO() as csv_out:
+        message_list = [message_ascii_raw for _ in range(5)]
+        with io.BytesIO() as in_data:
+
             # write vbs test file
-            writer = VbsWriter(vbs_in)
-            [writer.write(message) for message in message_list]
+            writer = VbsWriter(in_data)
+            for message in message_list:
+                writer.write(message)
+            else:
+                writer.close()
+            print_stream(in_data, "VBS in data")
+
+            # read vbs test file
+            reader = IpmReader(in_data)
+            results = list(reader)
+        self.assertEqual(len(results), len(message_list))
+
+    def test_real_message_example_ebcdic(self):
+        message_list = [message_ebcdic_raw for _ in range(5)]
+        with io.BytesIO() as in_data:
+            # write 1014 blocked test file
+            writer = VbsWriter(in_data, blocked=True)
+            for message in message_list:
+                writer.write(message)
+            else:
+                writer.close()
+            print_stream(in_data, "1014 blocked in data")
+
+            # read blocked test file
+            reader = IpmReader(in_data, encoding='cp500', blocked=True)
+            results = list(reader)
+            print(results)
+
+        self.assertEqual(len(results), len(message_list))
+
+    def test_ipmwriter_vbs_file(self):
+        record = {'MTI': '1111', 'DE2': '8888999988889999'}
+        records = [record for _ in range(5)]
+
+        with io.BytesIO() as out_data:
+            writer = IpmWriter(out_data)
+            for record in records:
+                writer.write(record)
             writer.close()
-            print_stream(vbs_in, "VBS in data")
 
-            # write 1014 test file
-            block_1014(vbs_in, blocked_in)
-            print_stream(blocked_in, "Blocked in data")
+            print_stream(out_data, 'VBS output file')
 
-            # unblock test file
-            unblock_1014(blocked_in, vbs_out)
-            print_stream(vbs_out, "VBS out data")
+            reader = IpmReader(out_data)
+            results = list(reader)
+            print(results)
 
-            # get vbs record reader
-            vbs_iter = VbsReader(vbs_out)
-            out_list = (iso8583_to_dict(record, config["bit_config"], "cp500") for record in vbs_iter)
-            print(list(out_list))
-            out_list = IpmReader(Unblock(blocked_in), encoding='cp500')
-            print(list(out_list))
-            out_list.vbs_data.seek(0)
-            out_list.vbs_data.buffer = b''
-            dicts_to_csv(out_list, config['output_data_elements'], csv_out)
-            print_stream(csv_out, "CSV data")
+        self.assertEqual(results, records)
 
-            # get vbs record reader
-            vbs_iter = VbsReader(vbs_in)
-            out_list = (iso8583_to_dict(record, config["bit_config"], "cp500") for record in vbs_iter)
-            dicts_to_csv(out_list, config['output_data_elements'], csv_out)
-            print_stream(csv_out, "CSV data")
+    def test_ipmwriter_blocked_file(self):
+        record = {'MTI': '1111', 'DE2': '8888999988889999'}
+        records = [record for _ in range(5)]
+
+        with io.BytesIO() as out_data:
+            writer = IpmWriter(out_data, blocked=True)
+            for record in records:
+                writer.write(record)
+            writer.close()
+
+            print_stream(out_data, 'VBS output file')
+
+            reader = IpmReader(out_data, blocked=True)
+            results = list(reader)
+            print(results)
+
+        self.assertEqual(results, records)
+
+    def test_vbsreader_vbs_file(self):
+        # create the input file bytes -- test_file
+        records = [b'12345678901234567890' for _ in range(5)]
+        with io.BytesIO() as in_data:
+
+            # write vbs test file
+            writer = VbsWriter(in_data)
+            for record in records:
+                writer.write(record)
+            else:
+                writer.close()
+            print_stream(in_data, "VBS in data")
+
+            reader = VbsReader(in_data)
+            results = list(reader)
+            print(results)
+
+        self.assertEqual(results, records)
+
+    def test_vbsreader_blocked_file(self):
+        # create the input file bytes -- test_file
+        records = [b'12345678901234567890' for _ in range(5)]
+        with io.BytesIO() as in_data:
+
+            # write vbs test file
+            writer = VbsWriter(in_data, blocked=True)
+            for record in records:
+                writer.write(record)
+            else:
+                writer.close()
+            print_stream(in_data, "Blocked vbs data")
+
+            reader = VbsReader(in_data, blocked=True)
+            results = list(reader)
+            print(results)
+            self.assertEqual(results, records)
 
     def test_change_encoding(self):
         # add 5 records to a list
-        message_list = [message_ebcdic_raw for _ in range(5)]
+        message_list = [message_ascii_raw for _ in range(1)]
 
-        # create the input ipm file bytes -- test_file
-        with io.BytesIO() as vbs_in, io.BytesIO() as blocked_in, tempfile.TemporaryFile() as flipped_out1, tempfile.TemporaryFile() as flipped_out2:
-            # write vbs test file
-            writer = VbsWriter(vbs_in)
-            [writer.write(message) for message in message_list]
-            writer.close()
-            print_stream(vbs_in, "VBS in data")
+        # create test file
+        vbs_in = io.BytesIO()
+        writer = VbsWriter(vbs_in, blocked=True)
+        for message in message_list:
+            writer.write(message)
+        writer.close()
 
-            # write 1014 test file
-            block_1014(vbs_in, blocked_in)
-            print_stream(blocked_in, "Blocked in data")
+        # print it
+        print_stream(vbs_in, "Blocked in data")
 
-            change_param_encoding(blocked_in, flipped_out1)
-            print_stream(flipped_out1, "Flipped out 1")
+        # process the encoding
+        param_out = io.BytesIO()
+        change_param_encoding(vbs_in, param_out, in_encoding='latin1', out_encoding='latin1')
+        print_stream(param_out, "Change param encoding")
 
-            blocked_in.seek(0)
-            change_encoding(blocked_in, flipped_out2)
-            print_stream(flipped_out1, "Flipped out 2")
+        vbs_in.seek(0)
+        ipm_out = io.BytesIO()
+        change_encoding(vbs_in, ipm_out, in_encoding='latin1', out_encoding='latin1')
+        print_stream(ipm_out, "Change encoding")
+
+        vbs_in.seek(0)
+        vbs_in_value = vbs_in.read()
+
+        param_out.seek(0)
+        param_out_value = param_out.read()
+        self.assertEqual(vbs_in_value, param_out_value)
+
+        ipm_out.seek(0)
+        ipm_out_value = ipm_out.read()
+        self.assertEqual(vbs_in_value, ipm_out_value)
 
 
 def print_stream(stream, description):

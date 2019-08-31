@@ -3,8 +3,8 @@ import unittest
 
 from cardutil.config import config
 from cardutil.iso8583 import (
-    BitArray, iso8583_to_field, field_to_iso8583, iso8583_to_dict, dict_to_iso8583, loads, dumps,
-    pds_to_de, pds_to_dict
+    BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
+    _pds_to_de, _pds_to_dict
 )
 
 message_ebcdic_raw = (
@@ -51,40 +51,40 @@ class Iso8583TestCase(unittest.TestCase):
     def test_iso8583_to_field(self):
         self.assertEqual(
             ({'DE1': '4564320012321122'}, 18),
-            iso8583_to_field('1', {'field_type': 'LLVAR', 'field_length': 0}, b'164564320012321122'))
+            _iso8583_to_field('1', {'field_type': 'LLVAR', 'field_length': 0}, b'164564320012321122'))
         self.assertEqual(
             ({'DE1': '4564320012321122'}, 19),
-            iso8583_to_field('1', {'field_type': 'LLLVAR', 'field_length': 0}, b'0164564320012321122'))
+            _iso8583_to_field('1', {'field_type': 'LLLVAR', 'field_length': 0}, b'0164564320012321122'))
         self.assertEqual(
             ({'DE1': '4564320012321122    '}, 20),
-            iso8583_to_field('1', {'field_type': 'FIXED', 'field_length': 20}, b'4564320012321122    '))
+            _iso8583_to_field('1', {'field_type': 'FIXED', 'field_length': 20}, b'4564320012321122    '))
         self.assertEqual(
             ({'DE1': 1234}, 20),
-            iso8583_to_field(
+            _iso8583_to_field(
                 '1', {'field_type': 'FIXED', 'python_field_type': 'int', 'field_length': 20}, b'00000000000000001234'))
         self.assertEqual(
             ({'DE1': 1234}, 6),
-            iso8583_to_field('1', {'field_type': 'LLVAR', 'python_field_type': 'int', 'field_length': 0}, b'041234'))
+            _iso8583_to_field('1', {'field_type': 'LLVAR', 'python_field_type': 'int', 'field_length': 0}, b'041234'))
         self.assertEqual(
             ({'DE1': decimal.Decimal('123.432')}, 20),
-            iso8583_to_field('1', {'field_type': 'FIXED', 'python_field_type': 'decimal', 'field_length': 20},
+            _iso8583_to_field('1', {'field_type': 'FIXED', 'python_field_type': 'decimal', 'field_length': 20},
                              b'0000000000000123.432'))
 
     def test_field_to_iso8583(self):
         self.assertEqual(
-            b'164564320012321122', field_to_iso8583({'field_type': 'LLVAR', 'field_length': 0}, "4564320012321122"))
+            b'164564320012321122', _field_to_iso8583({'field_type': 'LLVAR', 'field_length': 0}, "4564320012321122"))
         self.assertEqual(
-            b'0164564320012321122', field_to_iso8583({'field_type': 'LLLVAR', 'field_length': 0}, "4564320012321122"))
+            b'0164564320012321122', _field_to_iso8583({'field_type': 'LLLVAR', 'field_length': 0}, "4564320012321122"))
         self.assertEqual(
-            b'4564320012321122    ', field_to_iso8583({'field_type': 'FIXED', 'field_length': 20}, "4564320012321122"))
+            b'4564320012321122    ', _field_to_iso8583({'field_type': 'FIXED', 'field_length': 20}, "4564320012321122"))
         self.assertEqual(
-            b'00000000000000001234', field_to_iso8583(
+            b'00000000000000001234', _field_to_iso8583(
                 {'field_type': 'FIXED', 'python_field_type': 'int', 'field_length': 20}, 1234))
         self.assertEqual(
-            b'041234', field_to_iso8583({'field_type': 'LLVAR', 'python_field_type': 'int', 'field_length': 0}, 1234))
+            b'041234', _field_to_iso8583({'field_type': 'LLVAR', 'python_field_type': 'int', 'field_length': 0}, 1234))
         self.assertEqual(
             b'0000000000000123.432',
-            field_to_iso8583(
+            _field_to_iso8583(
                 {'field_type': 'FIXED', 'python_field_type': 'decimal', 'field_length': 20},
                 decimal.Decimal("123.432")))
 
@@ -97,31 +97,43 @@ class Iso8583TestCase(unittest.TestCase):
                    'DE43_STATE': 'QLD', 'DE43_COUNTRY': 'AUS', 'DE48': '0001001Y', 'PDS0001': 'Y', 'DE49': '999',
                    'DE63': '0000000000000001', 'DE71': '12345678', 'DE94': '999999'}
 
-        ascii_dict = iso8583_to_dict(message_ascii_raw, config["bit_config"], "latin-1")
+        ascii_dict = _iso8583_to_dict(message_ascii_raw, config["bit_config"], "latin-1")
         self.assertEqual(ascii_dict, expected_dict)
-        ebcdic_dict = iso8583_to_dict(message_ebcdic_raw, config["bit_config"], "cp500")
+        ebcdic_dict = _iso8583_to_dict(message_ebcdic_raw, config["bit_config"], "cp500")
         self.assertEqual(ebcdic_dict, expected_dict)
 
     def test_dict_to_iso8583(self):
         source_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'PDS0001': '1', 'PDS9999': 'Z'}
-        generated_iso = dict_to_iso8583(source_dict, config['bit_config'])
-        expected_iso = (b'1144\xe0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08164444555544445555111111'
+        actual_iso = _dict_to_iso8583(source_dict, config['bit_config'])
+        expected_iso = (b'1144\xe0\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555544445555111111'
                         b'016000100119999001Z')
-        print(generated_iso)
-        self.assertEqual(expected_iso, generated_iso)
+        print(actual_iso)
+        self.assertEqual(expected_iso, actual_iso)
 
     def test_dict_to_pds_to_de(self):
         vals = {'PDS0001': '123', 'PDS9999': 'ABCDEF'}
-        outs = pds_to_de(vals)
+        outs = _pds_to_de(vals)
         print(outs)
-        self.assertEqual(pds_to_dict(outs.pop()), vals)
+        self.assertEqual(_pds_to_dict(outs.pop()), vals)
 
     def test_pds_to_de_multiple_fields(self):
         vals = {'PDS0001': '*' * 900, 'PDS9999': '!' * 900}
-        outs = pds_to_de(vals)
+        outs = _pds_to_de(vals)
         print(outs)
-        self.assertEqual(pds_to_dict(outs.pop()), {'PDS9999': '!' * 900})
-        self.assertEqual(pds_to_dict(outs.pop()), {'PDS0001': '*' * 900})
+        self.assertEqual(_pds_to_dict(outs.pop()), {'PDS9999': '!' * 900})
+        self.assertEqual(_pds_to_dict(outs.pop()), {'PDS0001': '*' * 900})
+
+    def test_dict_to_pds_to_de(self):
+        vals = {'PDS0001': '123', 'PDS9999': 'ABCDEF'}
+        outs = _pds_to_de(vals)
+        print(outs)
+        self.assertEqual(_pds_to_dict(outs.pop()), vals)
+
+    def test_pds_to_de_no_pds_fields(self):
+        vals = {'DE1': '*', 'DE2': '*'}
+        outs = _pds_to_de(vals)
+        print(outs)
+        self.assertListEqual(outs, [])
 
 
 if __name__ == '__main__':
