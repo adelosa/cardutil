@@ -4,13 +4,13 @@ Cardutil is a python library and toolset for working with payment card messages 
 
 The library has **zero** pypi module dependencies.
 
-   .. image:: https://img.shields.io/pypi/l/mciutil.svg |
-   .. image:: https://img.shields.io/pypi/v/mciutil.svg |
-   .. image:: https://img.shields.io/pypi/wheel/cardutil.svg |
-   .. image:: https://img.shields.io/pypi/implementation/cardutil.svg |
-   .. image:: https://img.shields.io/pypi/status/cardutil.svg |
-   .. image:: https://img.shields.io/pypi/dm/cardutil.svg |
-   .. image:: https://img.shields.io/pypi/pyversions/cardutil.svg
+.. image:: https://img.shields.io/pypi/l/mciutil.svg |
+.. image:: https://img.shields.io/pypi/v/mciutil.svg |
+.. image:: https://img.shields.io/pypi/wheel/cardutil.svg |
+.. image:: https://img.shields.io/pypi/implementation/cardutil.svg |
+.. image:: https://img.shields.io/pypi/status/cardutil.svg |
+.. image:: https://img.shields.io/pypi/dm/cardutil.svg |
+.. image:: https://img.shields.io/pypi/pyversions/cardutil.svg
 
 
 Quickstart
@@ -19,7 +19,7 @@ Install
 ~~~~~~~
 ::
 
-    pip install cardutil
+    $ pip install cardutil
 
 ISO8583 messages
 ~~~~~~~~~~~~~~~~
@@ -69,6 +69,7 @@ install
 
 ::
 
+    $ git clone https://hoganman@bitbucket.org/hoganman/cardutil.git
     $ python setup.py develop
 
 test

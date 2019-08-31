@@ -1,10 +1,14 @@
 from setuptools import setup, find_packages
 
+readme = open('README.rst', 'r').read()
+
 setup(name='cardutil',
       packages=find_packages(),
       version='0.1.0',
       license='MIT',
       description='Library and toolset for working with payment card messages and files',
+      long_description=readme,
+      long_description_content_type='text/x-rst',
       author='Anthony Delosa',
       author_email='adelosa@gmail.com',
       url='https://bitbucket.org/hoganman/cardutil',
