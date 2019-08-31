@@ -57,3 +57,6 @@ html_static_path = ['_static']
 
 # Order the generated doco same as the source
 autodoc_member_order = 'bysource'
+
+# readthedocs defaults to contents instead of index -- this makes it explicit
+master_doc = 'index'
