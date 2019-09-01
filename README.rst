@@ -71,7 +71,7 @@ install
 
 ::
 
-    $ git clone https://hoganman@bitbucket.org/hoganman/cardutil.git
+    $ git clone https://bitbucket.org/hoganman/cardutil.git
     $ pip install -e ".[test]"
 
 test
@@ -81,13 +81,22 @@ test
 
     $ pytest
     
+release
+~~~~~~~
+.. note::
+   Ensure that the source tree is clean before performing this process
+
+::
+
+    $ bumpversion (patch:minor:major)
+    $ git push --follow-tags
+
 docs
 ~~~~
 
 ::
 
     $ pip install -e ".[docs]"
-    $ sphinx-apidoc -o ./docs/source  ./cardutil 
     $ make html -C ./docs
     $ open ./docs/build/html/index.html 
 

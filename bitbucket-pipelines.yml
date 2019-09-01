@@ -1,17 +1,35 @@
 image: python
+stepdefinitions:
+
+  - test: &test
+      name: python unittests
+      script:
+        - pip install -e ".[test]"
+        - flake8
+        - pytest
+  - pypi-test: &pypi-test
+      name: deploy package to test pypi
+      deployment: Test
+      script:
+        - pipe: atlassian/pypi-publish:0.2.7
+          variables:
+            PYPI_USERNAME: $PYPI_USERNAME
+            PYPI_PASSWORD: $PYPI_TEST_PASSWORD
+            REPOSITORY: 'https://test.pypi.org/legacy/'
+  - pypi-prod: &pypi-prod
+      name: deploy package to prod pypi
+      deployment: Production
+      script:
+        - pipe: atlassian/pypi-publish:0.2.7
+          variables:
+            PYPI_USERNAME: $PYPI_USERNAME
+            PYPI_PASSWORD: $PYPI_PASSWORD
+
 pipelines:
   default:
-    - step:
-        name: python unittests
-        script:
-          - pip install -e ".[test]"
-          - flake8
-          - pytest
-    - step:
-        name: deploy package to pypi
-        script:
-          - pipe: atlassian/pypi-publish:0.2.7
-            variables:
-              PYPI_USERNAME: $PYPI_USERNAME
-              PYPI_PASSWORD: $PYPI_TEST_PASSWORD
-              REPOSITORY: 'https://test.pypi.org/legacy/'
+    - step: *test
+  tags:
+    v*:
+    - step: *test
+    - step: *pypi-test
+    - step: *pypi-prod
