@@ -4,14 +4,26 @@ Cardutil is a python package for working with payment card systems.
 
 * Supports python 3.6 and later.
 * The core library has **zero** package dependencies.
+* Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
 
-.. image:: https://img.shields.io/pypi/l/mciutil.svg |
-.. image:: https://img.shields.io/pypi/v/mciutil.svg |
-.. image:: https://img.shields.io/pypi/wheel/cardutil.svg |
-.. image:: https://img.shields.io/pypi/implementation/cardutil.svg |
-.. image:: https://img.shields.io/pypi/status/cardutil.svg |
-.. image:: https://img.shields.io/pypi/dm/cardutil.svg |
+
+.. image:: https://img.shields.io/pypi/l/cardutil.svg
+
+.. image:: https://img.shields.io/pypi/v/cardutil.svg
+
+.. image:: https://img.shields.io/pypi/wheel/cardutil.svg
+
+.. image:: https://img.shields.io/pypi/implementation/cardutil.svg
+
+.. image:: https://img.shields.io/pypi/status/cardutil.svg
+
+.. image:: https://img.shields.io/pypi/dm/cardutil.svg
+
 .. image:: https://img.shields.io/pypi/pyversions/cardutil.svg
+
+.. image:: https://readthedocs.org/projects/cardutil/badge/?version=latest
+   :target: https://cardutil.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
 
 Quickstart
 ----------
@@ -59,8 +71,8 @@ cli tools
 
 The following command line interface tools are included in the package
 
-* `mci_ipm_extract` converts Mastercard IPM files to csv
-* `mci_ipm_param_encode` changes the encoding of a Mastercard IPM parameter files
+* ``mci_ipm_extract`` converts Mastercard IPM files to csv
+* ``mci_ipm_param_encode`` changes the encoding of a Mastercard IPM parameter files
 
 
 Contributing
@@ -80,16 +92,6 @@ test
 ::
 
     $ pytest
-    
-release
-~~~~~~~
-.. note::
-   Ensure that the source tree is clean before performing this process
-
-::
-
-    $ bumpversion (patch:minor:major)
-    $ git push --follow-tags
 
 docs
 ~~~~
@@ -98,8 +100,17 @@ docs
 
     $ pip install -e ".[docs]"
     $ make html -C ./docs
-    $ open ./docs/build/html/index.html 
+    $ open ./docs/build/html/index.html
 
+release
+~~~~~~~
+.. note::
+   Ensure that the source tree is clean before performing this process
+
+::
+
+    $ bumpversion (patch|minor|major)
+    $ git push --follow-tags
 
 acknowledgements
 ----------------
