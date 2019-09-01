@@ -72,5 +72,3 @@ def filter_dictionary(dictionary, field_list):
     :return: dictionary with just keys from list. All values decoded
     """
     return {item: dictionary[item] for item in dictionary if item in field_list}
-
-

@@ -28,7 +28,3 @@ Mastercard |reg| IPM clearing file readers and writers
 
 * block and unblock 1014 blocked IPM and parameter files
 * process VBS format records
-
-----
-
-Mastercard is a registered trademark of Mastercard International Incorporated.

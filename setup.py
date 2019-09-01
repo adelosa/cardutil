@@ -4,9 +4,9 @@ readme = open('README.rst', 'r').read()
 
 setup(name='cardutil',
       packages=find_packages(),
-      version='0.1.1',
+      version='0.1.2',
       license='MIT',
-      description='Library and toolset for working with payment card messages and files',
+      description='Python package for working with payment card systems',
       long_description=readme,
       long_description_content_type='text/x-rst',
       author='Anthony Delosa',
@@ -14,7 +14,8 @@ setup(name='cardutil',
       url='https://bitbucket.org/hoganman/cardutil',
       install_requires=[],
       extras_require={
-        'docs': ['sphinx']
+        'docs': ['sphinx', 'sphinx_rtd_theme'],
+        'test': ['flake8', 'pytest']
       },
       classifiers=[
             'Development Status :: 5 - Production/Stable',

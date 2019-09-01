@@ -4,7 +4,9 @@ pipelines:
     - step:
         name: python unittests
         script:
-          - python setup.py test
+          - pip install -e ".[test]"
+          - flake8
+          - pytest
     - step:
         name: deploy package to pypi
         script:
@@ -13,6 +15,3 @@ pipelines:
               PYPI_USERNAME: $PYPI_USERNAME
               PYPI_PASSWORD: $PYPI_TEST_PASSWORD
               REPOSITORY: 'https://test.pypi.org/legacy/'
-#              # DISTRIBUTIONS: '<string>'
-#              # FOLDER: '<string>'
-#              # DEBUG: '<boolean>'

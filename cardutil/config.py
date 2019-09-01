@@ -61,7 +61,7 @@ The value for the bit is a dictionary containing the following values:
 config = {
     "bit_config": {
         "1": {"field_name": "Bitmap secondary", "field_type": "FIXED", "field_length": 8},
-        "2": {"field_name": "PAN", "field_type": "LLVAR", "field_length": 0},  #, "field_processor": "PAN"},
+        "2": {"field_name": "PAN", "field_type": "LLVAR", "field_length": 0},  # "field_processor": "PAN"},
         "3": {"field_name": "Processing code", "field_type": "FIXED", "field_length": 6},
         "4": {"field_name": "Amount transaction", "field_type": "FIXED", "field_length": 12,
               "field_python_type": "long"},

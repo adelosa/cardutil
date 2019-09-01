@@ -4,8 +4,7 @@ import unittest
 from cardutil.config import config
 from cardutil.iso8583 import (
     BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
-    _pds_to_de, _pds_to_dict
-)
+    _pds_to_de, _pds_to_dict)
 
 message_ebcdic_raw = (
         '1144'.encode('cp500') +
@@ -68,7 +67,7 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual(
             ({'DE1': decimal.Decimal('123.432')}, 20),
             _iso8583_to_field('1', {'field_type': 'FIXED', 'python_field_type': 'decimal', 'field_length': 20},
-                             b'0000000000000123.432'))
+                              b'0000000000000123.432'))
 
     def test_field_to_iso8583(self):
         self.assertEqual(
@@ -90,12 +89,13 @@ class Iso8583TestCase(unittest.TestCase):
 
     def test_iso8583_to_dict(self):
         expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': '000000009999',
-                   'DE12': '201508151715', 'DE22': '123456789012', 'DE24': '333', 'DE26': '1234',
-                   'DE31': '57995799120000001230612', 'DE33': '123456', 'DE38': '123456', 'DE42': '579942111111111',
-                   'DE43': 'BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLDAUS', 'DE43_NAME': 'BIG BOBS',
-                   'DE43_ADDRESS': '70 FERNDALE ST', 'DE43_SUBURB': 'ANNERLEY', 'DE43_POSTCODE': '4103',
-                   'DE43_STATE': 'QLD', 'DE43_COUNTRY': 'AUS', 'DE48': '0001001Y', 'PDS0001': 'Y', 'DE49': '999',
-                   'DE63': '0000000000000001', 'DE71': '12345678', 'DE94': '999999'}
+                         'DE12': '201508151715', 'DE22': '123456789012', 'DE24': '333', 'DE26': '1234',
+                         'DE31': '57995799120000001230612', 'DE33': '123456', 'DE38': '123456',
+                         'DE42': '579942111111111', 'DE43': 'BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLDAUS',
+                         'DE43_NAME': 'BIG BOBS', 'DE43_ADDRESS': '70 FERNDALE ST', 'DE43_SUBURB': 'ANNERLEY',
+                         'DE43_POSTCODE': '4103', 'DE43_STATE': 'QLD', 'DE43_COUNTRY': 'AUS',
+                         'DE48': '0001001Y', 'PDS0001': 'Y', 'DE49': '999', 'DE63': '0000000000000001',
+                         'DE71': '12345678', 'DE94': '999999'}
 
         ascii_dict = _iso8583_to_dict(message_ascii_raw, config["bit_config"], "latin-1")
         self.assertEqual(ascii_dict, expected_dict)
@@ -122,12 +122,6 @@ class Iso8583TestCase(unittest.TestCase):
         print(outs)
         self.assertEqual(_pds_to_dict(outs.pop()), {'PDS9999': '!' * 900})
         self.assertEqual(_pds_to_dict(outs.pop()), {'PDS0001': '*' * 900})
-
-    def test_dict_to_pds_to_de(self):
-        vals = {'PDS0001': '123', 'PDS9999': 'ABCDEF'}
-        outs = _pds_to_de(vals)
-        print(outs)
-        self.assertEqual(_pds_to_dict(outs.pop()), vals)
 
     def test_pds_to_de_no_pds_fields(self):
         vals = {'DE1': '*', 'DE2': '*'}

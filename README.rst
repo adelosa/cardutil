@@ -1,8 +1,9 @@
 cardutil
 ========
-Cardutil is a python library and toolset for working with payment card messages and files.
+Cardutil is a python package for working with payment card systems.
 
-The library has **zero** pypi module dependencies.
+* Supports python 3.6 and later.
+* The core library has **zero** package dependencies.
 
 .. image:: https://img.shields.io/pypi/l/mciutil.svg |
 .. image:: https://img.shields.io/pypi/v/mciutil.svg |
@@ -11,7 +12,6 @@ The library has **zero** pypi module dependencies.
 .. image:: https://img.shields.io/pypi/status/cardutil.svg |
 .. image:: https://img.shields.io/pypi/dm/cardutil.svg |
 .. image:: https://img.shields.io/pypi/pyversions/cardutil.svg
-
 
 Quickstart
 ----------
@@ -53,12 +53,14 @@ Create an IPM file::
         writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
         writer.close()
 
-Tools
------
-The following command line tools are included in the package
+cli tools
+---------
+.. note:: Not currently implemented.
+
+The following command line interface tools are included in the package
 
 * `mci_ipm_extract` converts Mastercard IPM files to csv
-* `mci_ipm_param_encode` changes the encoding of IPM parameter files
+* `mci_ipm_param_encode` changes the encoding of a Mastercard IPM parameter files
 
 
 Contributing
@@ -70,14 +72,14 @@ install
 ::
 
     $ git clone https://hoganman@bitbucket.org/hoganman/cardutil.git
-    $ python setup.py develop
+    $ pip install -e ".[test]"
 
 test
 ~~~~
 
 ::
 
-    $ python setup.py test
+    $ pytest
     
 docs
 ~~~~
@@ -99,4 +101,5 @@ Available at `Pypi:hexdump <https://pypi.org/project/hexdump/>`_.
 The python `ISO8583-Module` library was originally inspired by the work of Igor V. Custodio from his
 original ISO8583 parser. Available at `Pypi:ISO8583-Module <https://pypi.org/project/ISO8583-Module/>`_.
 
+Mastercard is a registered trademark of Mastercard International Incorporated.
 

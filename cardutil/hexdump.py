@@ -1,3 +1,7 @@
+# ================= cardutil ==========================
+# Original: https://bitbucket.org/techtonik/hexdump/src/default/hexdump.py
+# flake8: noqa
+# ================= cardutil ==========================
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 
