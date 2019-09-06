@@ -29,6 +29,12 @@ class Iso8583TestCase(unittest.TestCase):
     def test_loads(self):
         self.assertEqual({'MTI': '1234', 'DE2': '123'}, loads(dumps({'MTI': '1234', 'DE2': '123'})))
 
+    def test_dump_load_ascii(self):
+        self.assertEqual(message_ascii_raw, dumps(loads(message_ascii_raw)))
+
+    def test_dump_load_ebcdic(self):
+        self.assertEqual(message_ebcdic_raw, dumps(loads(message_ebcdic_raw, encoding='cp500'), encoding='cp500'))
+
     def test_bitarray(self):
         """
         feed in binary bitmap, convert to array then back to bitmap. Make sure its the same

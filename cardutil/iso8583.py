@@ -169,8 +169,8 @@ def _dict_to_iso8583(message, bit_config, encoding='latin-1'):
             LOGGER.debug(message.get('DE' + str(bit)))
             output_data += _field_to_iso8583(
                 bit_config[str(bit)],
-                message.get('DE' + str(bit))
-            )
+                message.get('DE' + str(bit)),
+                encoding=encoding)
 
     bitarray = BitArray()
     bitarray.fromlist(bitmap_values)
