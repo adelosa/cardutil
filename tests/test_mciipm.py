@@ -1,7 +1,7 @@
 import io
 import unittest
 
-from cardutil.mciipm import VbsWriter, VbsReader, change_encoding, change_param_encoding, IpmReader, IpmWriter
+from cardutil.mciipm import VbsWriter, VbsReader, IpmReader, IpmWriter
 
 message_ebcdic_raw = (
         '1144'.encode('cp500') +
@@ -128,41 +128,6 @@ class MciIpmTestCase(unittest.TestCase):
             results = list(reader)
             print(results)
             self.assertEqual(results, records)
-
-    def test_change_encoding(self):
-        # add 5 records to a list
-        message_list = [message_ascii_raw for _ in range(1)]
-
-        # create test file
-        vbs_in = io.BytesIO()
-        writer = VbsWriter(vbs_in, blocked=True)
-        for message in message_list:
-            writer.write(message)
-        writer.close()
-
-        # print it
-        print_stream(vbs_in, "Blocked in data")
-
-        # process the encoding
-        param_out = io.BytesIO()
-        change_param_encoding(vbs_in, param_out, in_encoding='latin1', out_encoding='latin1')
-        print_stream(param_out, "Change param encoding")
-
-        vbs_in.seek(0)
-        ipm_out = io.BytesIO()
-        change_encoding(vbs_in, ipm_out, in_encoding='latin1', out_encoding='latin1')
-        print_stream(ipm_out, "Change encoding")
-
-        vbs_in.seek(0)
-        vbs_in_value = vbs_in.read()
-
-        param_out.seek(0)
-        param_out_value = param_out.read()
-        self.assertEqual(vbs_in_value, param_out_value)
-
-        ipm_out.seek(0)
-        ipm_out_value = ipm_out.read()
-        self.assertEqual(vbs_in_value, ipm_out_value)
 
 
 def print_stream(stream, description):

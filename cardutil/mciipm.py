@@ -69,61 +69,8 @@ import logging
 import struct
 
 from cardutil import iso8583
-from cardutil.config import config
-from cardutil.outputter import dicts_to_csv
 
 LOGGER = logging.getLogger(__name__)
-
-
-def change_encoding(in_file, out_file, in_encoding='cp500', out_encoding='latin-1'):
-    """
-    Change encoding of IPM file from one encoding scheme to another
-
-    :param in_file: input IPM file object
-    :param out_file: output IPM file object
-    :param in_encoding: input file encoding string
-    :param out_encoding: output file encoding string
-    :return: None
-    """
-    reader = IpmReader(in_file, encoding=in_encoding, blocked=True)
-    writer = IpmWriter(out_file, encoding=out_encoding, blocked=True)
-
-    for record in reader:
-        writer.write(record)
-    writer.close()  # finalises the file by adding zero length record
-
-
-def change_param_encoding(in_file, out_file, in_encoding='cp500', out_encoding='latin-1'):
-    """
-    Change encoding of parameter file from one encoding format to another.
-
-    :param in_file: input parameter file object
-    :param out_file: output parameter file object
-    :param in_encoding: input file encoding string
-    :param out_encoding: output file encoding string
-    :return: None
-    """
-    vbs_reader = VbsReader(in_file, blocked=True)
-
-    in_records = (record.decode(in_encoding) for record in vbs_reader)
-    out_records = (record.encode(out_encoding) for record in in_records)
-
-    vbs_writer = VbsWriter(out_file, blocked=True)
-    for record in out_records:
-        vbs_writer.write(record)
-    vbs_writer.close()
-
-
-def output_csv(in_file, out_file, in_encoding='latin-1'):
-    """
-    Extract IPM file to csv format
-
-    :param in_file: input IPM file object
-    :param out_file: output csv file object
-    :param in_encoding: input file encoding string
-    :return: None
-    """
-    dicts_to_csv(IpmReader(Unblock1014(in_file), encoding=in_encoding), config['output_data_elements'], out_file)
 
 
 class Block1014(object):
