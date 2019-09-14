@@ -1,4 +1,25 @@
 """
+Mastercard |reg| IPM clearing file readers and writers
+
+* block and unblock 1014 blocked IPM and parameter files
+* process VBS format records
+
+Read an IPM file::
+
+    from cardutil import mciipm
+    with open('ipm_in.bin', 'rb') as ipm_in:
+        reader = mciipm.IpmReader(ipm_in)
+        for record in reader:
+            print(record)
+
+Create an IPM file::
+
+    from cardutil import mciipm
+    with open('ipm_out.bin', 'wb') as ipm_out:
+        writer = mciipm.IpmWriter(ipm_out)
+        writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
+        writer.close()
+
 MasterCard file formats
 -----------------------
 

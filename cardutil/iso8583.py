@@ -1,4 +1,19 @@
 """
+Parsers for ISO8583 messages.
+Supports Mastercard |reg| PDS field structures.
+
+Read an ISO8583 message returning dict::
+
+    from cardutil import iso8583
+    message_bytes = b'1144\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555566667777'
+    message_dict = iso8583.loads(message_bytes)
+
+Create an ISO8583 message returning bytes::
+
+    from cardutil import iso8583
+    message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
+    message_bytes = iso8583.dumps(message_dict)
+
 The iso8583 module provides ISO8583 message parsing functions.
 See `ISO8583 Wikipedia page <https://en.wikipedia.org/wiki/ISO_8583>`_. for more details.
 
