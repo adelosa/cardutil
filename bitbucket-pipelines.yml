@@ -6,7 +6,8 @@ stepdefinitions:
       script:
         - pip install -e ".[test]"
         - flake8
-        - pytest
+        - mkdir -p test-results
+        - pytest --junitxml ./test-results/results.xml
   - pypi-test: &pypi-test
       name: deploy package to test pypi
       deployment: Test
