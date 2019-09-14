@@ -15,7 +15,9 @@ setup(name='cardutil',
       install_requires=[],
       extras_require={
         'docs': ['sphinx', 'sphinx_rtd_theme'],
-        'test': ['flake8', 'pytest', 'bump2version']
+        'test': ['flake8', 'pytest', 'bump2version', 'cryptography'],
+        'pin': ['cryptography']
+
       },
       classifiers=[
             'Development Status :: 5 - Production/Stable',
