@@ -1,5 +1,4 @@
 import csv
-import sys
 
 
 def dicts_to_csv(data_list, field_list, output_file):
@@ -8,45 +7,20 @@ def dicts_to_csv(data_list, field_list, output_file):
 
     :param data_list: list of dictionaries that contain the data to be loaded
     :param field_list: list of fields in the dictionary to be loaded
-    :param output_filename: filename for output CSV file
+    :param output_file: output CSV file
     :return: None
     """
-    try:
-        instance_type = unicode
-        file_mode = "wb"
-    except NameError:
-        instance_type = str
-        file_mode = "w"
-
     filtered_data_list = filter_data_list(data_list, field_list)
 
-    # with open(output_filename, file_mode) as output_file:
     writer = csv.DictWriter(
         output_file,
         fieldnames=field_list,
         extrasaction="ignore",
         lineterminator="\n")
 
-    # python 2.6 does not support writeheader() so skip
-    if sys.version_info[0] == 2 and sys.version_info[1] == 6:
-        pass
-    else:
-        writer.writeheader()
-
+    writer.writeheader()
     for item in filtered_data_list:
-        if file_mode == "w":
-            row = dict(
-                (k, v.decode('latin1') if not isinstance(v, instance_type) else v)
-                for k, v in item.items()
-            )
-        else:
-            row = dict(
-                (k, v.encode('utf-8') if isinstance(v, instance_type) else v)
-                for k, v in item.items()
-            )
-        writer.writerow(row)
-
-    # LOGGER.info("%s records written", len(data_list))
+        writer.writerow(item)
 
 
 def filter_data_list(data_list, field_list):

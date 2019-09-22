@@ -1,8 +1,9 @@
-import unittest
+import csv
 import io
+import unittest
 
 from cardutil.mciipm import VbsWriter
-from cardutil.cli import change_encoding, change_param_encoding
+from cardutil.cli import mci_ipm_encode, mci_ipm_param_encode, mci_csv_to_ipm, mci_ipm_to_csv
 
 message_ebcdic_raw = (
         '1144'.encode('cp500') +
@@ -36,14 +37,15 @@ class ChangeEncodingTestCase(unittest.TestCase):
         # print it
         print_stream(vbs_in, "Blocked in data")
 
-        # process the encoding
+        # process the param encoding
         param_out = io.BytesIO()
-        change_param_encoding(vbs_in, param_out, in_encoding='latin1', out_encoding='latin1')
+        mci_ipm_param_encode(vbs_in, param_out, in_encoding='latin1', out_encoding='latin1')
         print_stream(param_out, "Change param encoding")
 
+        # process the ipm encode
         vbs_in.seek(0)
         ipm_out = io.BytesIO()
-        change_encoding(vbs_in, ipm_out, in_encoding='latin1', out_encoding='latin1')
+        mci_ipm_encode(vbs_in, ipm_out, in_encoding='latin1', out_encoding='latin1')
         print_stream(ipm_out, "Change encoding")
 
         vbs_in.seek(0)
@@ -56,6 +58,36 @@ class ChangeEncodingTestCase(unittest.TestCase):
         ipm_out.seek(0)
         ipm_out_value = ipm_out.read()
         self.assertEqual(vbs_in_value, ipm_out_value)
+
+    def test_mci_csv_to_ipm_to_csv(self):
+        """
+        create an ipm file from csv, then create csv from ipm. Check that input csv == output csv
+        """
+        def do_test(no_blocking):
+            csv_data = 'MTI,DE2,DE4\n0100,1111222233334444,100'
+            in_csv = io.StringIO(csv_data)
+            print_stream(in_csv, 'in_csv')
+            in_csv.seek(0)
+            out_ipm = io.BytesIO()
+
+            mci_csv_to_ipm(in_csv=in_csv, out_ipm=out_ipm, no1014blocking=no_blocking)
+            out_ipm.seek(0)
+            print_stream(out_ipm, 'out_ipm')
+            out_ipm.seek(0)
+
+            out_csv = io.StringIO()
+            mci_ipm_to_csv(in_ipm=out_ipm, out_csv=out_csv, no1014blocking=no_blocking)
+            print_stream(out_csv, 'out_csv')
+            out_csv.seek(0)
+
+            reader = csv.DictReader(out_csv)
+            record = dict(list(reader).pop())
+            print(record)
+            self.assertEqual(record['MTI'], '0100')
+            self.assertEqual(record['DE2'], '1111222233334444')
+            self.assertEqual(record['DE4'], '100')
+        do_test(no_blocking=False)
+        do_test(no_blocking=True)
 
 
 def print_stream(stream, description):

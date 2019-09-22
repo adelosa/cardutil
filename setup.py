@@ -13,11 +13,18 @@ setup(name='cardutil',
       author_email='adelosa@gmail.com',
       url='https://bitbucket.org/hoganman/cardutil',
       install_requires=[],
+      entry_points={
+          'console_scripts': [
+              'mci_ipm_to_csv = cardutil.cli:mci_ipm_to_csv_cli',
+              'mci_csv_to_ipm = cardutil.cli:mci_csv_to_ipm_cli',
+              'mci_ipm_encode = cardutil.cli:mci_ipm_encode_cli',
+              'mci_ipm_param_encode = cardutil.cli:mci_ipm_param_encode_cli',
+          ]
+      },
       extras_require={
         'docs': ['sphinx', 'sphinx_rtd_theme'],
         'test': ['flake8', 'pytest', 'bump2version', 'cryptography'],
         'pin': ['cryptography']
-
       },
       classifiers=[
             'Development Status :: 5 - Production/Stable',

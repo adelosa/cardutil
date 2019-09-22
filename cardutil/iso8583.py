@@ -37,6 +37,7 @@ import re
 import struct
 
 from cardutil.BitArray import BitArray
+from cardutil.card import mask
 from cardutil.config import config
 from cardutil.hexdump import hexdump
 
@@ -198,15 +199,15 @@ def _dict_to_iso8583(message, bit_config, encoding='latin-1'):
 
 def _field_to_iso8583(bit_config, field_value, encoding='latin-1'):
 
-    output = b''
+    output = ''
     field_value = _pytype_to_string(field_value, bit_config)
-    field_length = bit_config['field_length']
-    length_size = _get_field_length(bit_config)
+    field_length = bit_config.get('field_length')
+    length_size = _get_field_length(bit_config)  # size of length for llvar and lllvar fields
     if length_size > 0:
         field_length = len(field_value)
-        output += format(field_length, '0' + str(length_size)).encode(encoding)
-    output += format(field_value[:field_length], '<' + str(field_length)).encode(encoding)
-    return output
+        output += format(field_length, '0' + str(length_size))
+    output += format(field_value[:field_length], '<' + str(field_length))
+    return output.encode(encoding)
 
 
 def _iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
@@ -241,7 +242,7 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
 
     # if field is PAN type, mask the card value
     if field_processor == 'PAN':
-        field_data = _pan_mask(field_data)
+        field_data = mask(field_data)
 
     # if field is PAN type, mask the card value
     if field_processor == 'PAN-PREFIX':
@@ -288,17 +289,6 @@ def _pan_prefix(field_data):
     return field_data[:9]
 
 
-def _pan_mask(field_data):
-    """
-    Get mask a PAN
-
-    :param field_data: unmasked pan
-    :param prefix_only: Set true to get first 9 chars of PAN
-    :return: masked pan
-    """
-    return field_data[:6] + ("*" * (len(field_data)-9)) + field_data[len(field_data)-3:len(field_data)]
-
-
 def _string_to_pytype(field_data, bit_config):
     """
     Field conversion to native python type
@@ -307,17 +297,16 @@ def _string_to_pytype(field_data, bit_config):
     :param bit_config: Configuration for bit
     :return: data in required type
     """
-    field_python_type = _get_parameter(bit_config, 'python_field_type')
+    field_python_type = _get_parameter(bit_config, 'field_python_type')
 
-    if field_python_type == "int":
+    if field_python_type in ("int", "long"):
         field_data = int(field_data)
     if field_python_type == "decimal":
         field_data = decimal.Decimal(field_data)
-    if field_python_type == "long":
-        field_data = int(field_data)
     if field_python_type == "datetime":
+        print(f's->p field_data={field_data}')
         field_data = datetime.datetime.strptime(
-            field_data, "%y%m%d%H%M%S")
+            field_data, "%Y%m%d%H%M")
     return field_data
 
 
@@ -329,17 +318,15 @@ def _pytype_to_string(field_data, bit_config):
     :param bit_config: Configuration for bit
     :return: data in required type
     """
-    field_python_type = _get_parameter(bit_config, 'python_field_type')
-
+    field_python_type = _get_parameter(bit_config, 'field_python_type')
     return_string = field_data
-    if field_python_type == "int":
-        return_string = format(field_data, '0' + str(_get_parameter(bit_config, 'field_length')))
+    if field_python_type in ('int', 'long'):
+        return_string = format(int(field_data), '0' + str(_get_parameter(bit_config, 'field_length')) + 'd')
     if field_python_type == "decimal":
-        return_string = format(field_data, '0' + str(_get_parameter(bit_config, 'field_length')))
-    if field_python_type == "long":
-        return_string = format(field_data, '0' + str(_get_parameter(bit_config, 'field_length')))
+        return_string = format(decimal.Decimal(field_data), '0' + str(_get_parameter(bit_config, 'field_length')) + 'f')
     if field_python_type == "datetime":
-        return_string = format(field_data, "%y%m%d%H%M%S")
+        print(f'p->s field_data={field_data}')
+        return_string = format(field_data, "%Y%m%d%H%M")
     return return_string
 
 

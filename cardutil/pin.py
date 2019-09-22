@@ -47,17 +47,19 @@ def visa_pvv(tsp: str, pvv_key: bytes) -> str:
     return ''.join(values_pass1[0:4])
 
 
-def pin_block_0(pin, card_number):
+def pin_block_0(pin: str, card_number: str):
     """
     Pin block in format 0::
 
-        P1 = 04PPPPFFFFFFFFFF
-        P2 = 0000123456789012
+        P1 = LLPPPPFFFFFFFFFF
+        P2 = 0000CCCCCCCCCCCC
         PIN Block = P1 XOR P2
 
-    where
-    * C = X'0'
-    * L = X'4' to X'C'  -- 4 to 12
+    where:
+        * L = Length of pin
+        * P = Pin
+        * F = Fill, x'F'
+        * C = Last 12 digits of card number (excluding check digit)
 
     :param pin: pin as string
     :param card_number: card number as string

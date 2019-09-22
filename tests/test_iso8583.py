@@ -1,10 +1,11 @@
+import datetime
 import decimal
 import unittest
 
 from cardutil.config import config
 from cardutil.iso8583 import (
     BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
-    _pds_to_de, _pds_to_dict)
+    _pds_to_de, _pds_to_dict, _pytype_to_string)
 
 message_ebcdic_raw = (
         '1144'.encode('cp500') +
@@ -66,42 +67,59 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual(
             ({'DE1': 1234}, 20),
             _iso8583_to_field(
-                '1', {'field_type': 'FIXED', 'python_field_type': 'int', 'field_length': 20}, b'00000000000000001234'))
+                '1', {'field_type': 'FIXED', 'field_python_type': 'int', 'field_length': 20}, b'00000000000000001234'))
         self.assertEqual(
             ({'DE1': 1234}, 6),
-            _iso8583_to_field('1', {'field_type': 'LLVAR', 'python_field_type': 'int', 'field_length': 0}, b'041234'))
+            _iso8583_to_field('1', {'field_type': 'LLVAR', 'field_python_type': 'int', 'field_length': 0}, b'041234'))
         self.assertEqual(
             ({'DE1': decimal.Decimal('123.432')}, 20),
-            _iso8583_to_field('1', {'field_type': 'FIXED', 'python_field_type': 'decimal', 'field_length': 20},
+            _iso8583_to_field('1', {'field_type': 'FIXED', 'field_python_type': 'decimal', 'field_length': 20},
                               b'0000000000000123.432'))
 
     def test_field_to_iso8583(self):
+        self.assertEqual(b'164564320012321122', _field_to_iso8583({'field_type': 'LLVAR'}, "4564320012321122"))
         self.assertEqual(
             b'164564320012321122', _field_to_iso8583({'field_type': 'LLVAR', 'field_length': 0}, "4564320012321122"))
+        self.assertEqual(b'0164564320012321122', _field_to_iso8583({'field_type': 'LLLVAR'}, "4564320012321122"))
         self.assertEqual(
             b'0164564320012321122', _field_to_iso8583({'field_type': 'LLLVAR', 'field_length': 0}, "4564320012321122"))
         self.assertEqual(
             b'4564320012321122    ', _field_to_iso8583({'field_type': 'FIXED', 'field_length': 20}, "4564320012321122"))
         self.assertEqual(
             b'00000000000000001234', _field_to_iso8583(
-                {'field_type': 'FIXED', 'python_field_type': 'int', 'field_length': 20}, 1234))
+                {'field_type': 'FIXED', 'field_python_type': 'int', 'field_length': 20}, 1234))
         self.assertEqual(
-            b'041234', _field_to_iso8583({'field_type': 'LLVAR', 'python_field_type': 'int', 'field_length': 0}, 1234))
+            b'041234', _field_to_iso8583({'field_type': 'LLVAR', 'field_python_type': 'int'}, 1234))
         self.assertEqual(
-            b'0000000000000123.432',
-            _field_to_iso8583(
-                {'field_type': 'FIXED', 'python_field_type': 'decimal', 'field_length': 20},
+            b'041234', _field_to_iso8583({'field_type': 'LLVAR', 'field_python_type': 'int'}, '1234'))
+        # TODO Exception if field overflow
+        self.assertEqual(
+            b'123', _field_to_iso8583({'field_type': 'FIXED', 'field_python_type': 'int', 'field_length': 3}, 1234))
+        self.assertEqual(
+            b'01234', _field_to_iso8583({'field_type': 'FIXED', 'field_python_type': 'int', 'field_length': 5}, 1234))
+
+        self.assertEqual(
+            b'041234', _field_to_iso8583({'field_type': 'LLVAR', 'field_python_type': 'int', 'field_length': 0}, 1234))
+
+        self.assertEqual(
+            b'0000000000000123.432', _field_to_iso8583(
+                {'field_type': 'FIXED', 'field_python_type': 'decimal', 'field_length': 20},
                 decimal.Decimal("123.432")))
+        self.assertEqual(
+            b'201401021516', _field_to_iso8583(
+                {'field_type': 'FIXED', 'field_python_type': 'datetime', 'field_length': 12},
+                datetime.datetime(2014, 1, 2, 15, 16)))
 
     def test_iso8583_to_dict(self):
-        expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': '000000009999',
-                         'DE12': '201508151715', 'DE22': '123456789012', 'DE24': '333', 'DE26': '1234',
+        expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': 9999,
+                         'DE12': datetime.datetime(2015, 8, 15, 17, 15),
+                         'DE22': '123456789012', 'DE24': '333', 'DE26': 1234,
                          'DE31': '57995799120000001230612', 'DE33': '123456', 'DE38': '123456',
                          'DE42': '579942111111111', 'DE43': 'BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLDAUS',
                          'DE43_NAME': 'BIG BOBS', 'DE43_ADDRESS': '70 FERNDALE ST', 'DE43_SUBURB': 'ANNERLEY',
                          'DE43_POSTCODE': '4103', 'DE43_STATE': 'QLD', 'DE43_COUNTRY': 'AUS',
                          'DE48': '0001001Y', 'PDS0001': 'Y', 'DE49': '999', 'DE63': '0000000000000001',
-                         'DE71': '12345678', 'DE94': '999999'}
+                         'DE71': 12345678, 'DE94': '999999'}
 
         ascii_dict = _iso8583_to_dict(message_ascii_raw, config["bit_config"], "latin-1")
         self.assertEqual(ascii_dict, expected_dict)
@@ -134,6 +152,14 @@ class Iso8583TestCase(unittest.TestCase):
         outs = _pds_to_de(vals)
         print(outs)
         self.assertListEqual(outs, [])
+
+    def test_pytype_to_string(self):
+        self.assertEqual('ABC', _pytype_to_string('ABC', {'field_python_type': 'string', 'field_length': 5}))
+        self.assertEqual('ABC', _pytype_to_string('ABC', {'field_length': 5}))
+        self.assertEqual('00001', _pytype_to_string('1', {'field_python_type': 'int', 'field_length': 5}))
+        self.assertEqual('00001', _pytype_to_string('1', {'field_python_type': 'long', 'field_length': 5}))
+        self.assertEqual('201801011715',
+                         _pytype_to_string(datetime.datetime(2018, 1, 1, 17, 15), {'field_python_type': 'datetime'}))
 
 
 if __name__ == '__main__':
