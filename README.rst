@@ -37,12 +37,22 @@ install
     $ git clone https://bitbucket.org/hoganman/cardutil.git
     $ pip install -e ".[test]"
 
-test
-~~~~
+unit test
+~~~~~~~~~
 
 ::
 
     $ pytest
+
+coverage
+~~~~~~~~
+
+::
+
+    $ coverage run -m pytest
+    $ coverage report -m
+    $ coverage html
+    $ open htmlcov/index.html
 
 docs
 ~~~~
@@ -58,7 +68,7 @@ release
 .. note::
    Ensure that the source tree is clean before performing this process
 
-::
+.. code-block:: bash
 
     $ bumpversion (patch|minor|major)
     $ git push --follow-tags
@@ -69,7 +79,7 @@ The python `hexdump` library is embedded in this package. Many thank to Anatoly 
 This library is a life saver for debugging issues with binary data.
 Available at `Pypi:hexdump <https://pypi.org/project/hexdump/>`_.
 
-The python `ISO8583-Module` library was originally inspired by the work of Igor V. Custodio from his
+The iso8583 module in cardutil was inspired by the work of Igor V. Custodio from his
 original ISO8583 parser. Available at `Pypi:ISO8583-Module <https://pypi.org/project/ISO8583-Module/>`_.
 
 Mastercard is a registered trademark of Mastercard International Incorporated.

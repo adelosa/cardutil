@@ -8,6 +8,12 @@ stepdefinitions:
         - flake8
         - mkdir -p test-results
         - pytest --junitxml ./test-results/results.xml
+  - test: &coverage
+      name: python test coverage
+      script:
+        - pip install -e ".[test]"
+        - coverage run -m pytest
+        - coverage report --fail-under 75 -m
   - pypi-test: &pypi-test
       name: deploy package to test pypi
       deployment: Test
@@ -29,8 +35,11 @@ stepdefinitions:
 pipelines:
   default:
     - step: *test
+    - step: *coverage
+
   tags:
     v*:
     - step: *test
+    - step: *coverage
     - step: *pypi-test
     - step: *pypi-prod

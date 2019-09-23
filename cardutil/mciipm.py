@@ -145,7 +145,7 @@ class Block1014(object):
         # write whatever is left
         LOGGER.debug(f'write last: {bytes_to_write}')
         self.file_obj.write(bytes_to_write)
-        self.remaining_chars = 1014-len(bytes_to_write)
+        self.remaining_chars = 1012-len(bytes_to_write)
         LOGGER.debug(f'remaining_chars={self.remaining_chars}')
 
     def seek(self, pos):

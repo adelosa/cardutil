@@ -1,7 +1,7 @@
 import io
 import unittest
 
-from cardutil.mciipm import VbsWriter, VbsReader, IpmReader, IpmWriter
+from cardutil.mciipm import VbsWriter, VbsReader, IpmReader, IpmWriter, block_1014
 
 message_ebcdic_raw = (
         '1144'.encode('cp500') +
@@ -22,11 +22,11 @@ class MciIpmTestCase(unittest.TestCase):
 
     def test_real_message_example_ascii(self):
         # create the input ipm file bytes -- test_file
-        message_list = [message_ascii_raw for _ in range(5)]
+        message_list = [message_ascii_raw for _ in range(15)]
         with io.BytesIO() as in_data:
 
             # write vbs test file
-            writer = VbsWriter(in_data)
+            writer = VbsWriter(in_data, blocked=True)
             for message in message_list:
                 writer.write(message)
             else:
@@ -34,12 +34,12 @@ class MciIpmTestCase(unittest.TestCase):
             print_stream(in_data, "VBS in data")
 
             # read vbs test file
-            reader = IpmReader(in_data)
+            reader = IpmReader(in_data, blocked=True)
             results = list(reader)
         self.assertEqual(len(results), len(message_list))
 
     def test_real_message_example_ebcdic(self):
-        message_list = [message_ebcdic_raw for _ in range(5)]
+        message_list = [message_ebcdic_raw for _ in range(15)]
         with io.BytesIO() as in_data:
             # write 1014 blocked test file
             writer = VbsWriter(in_data, blocked=True)
@@ -128,6 +128,36 @@ class MciIpmTestCase(unittest.TestCase):
             results = list(reader)
             print(results)
             self.assertEqual(results, records)
+
+    def test_file_blocker_compare(self):
+        """
+        Checks that the Block1014 class works the same as the
+        :return:
+        """
+        out_unblocked = io.BytesIO()
+
+        message_list = [message_ascii_raw for _ in range(10)]
+        writer = VbsWriter(out_unblocked)
+        for message in message_list:
+            writer.write(message)
+        writer.close()
+
+        out_blocked = io.BytesIO()
+        block_1014(out_unblocked, out_blocked)
+        out_blocked.seek(0)
+        blocked1 = out_blocked.read()
+        print(blocked1)
+
+        out_blocked2 = io.BytesIO()
+        writer = VbsWriter(out_blocked2, blocked=True)
+        for message in message_list:
+            writer.write(message)
+        writer.close()
+        out_blocked2.seek(0)
+        blocked2 = out_blocked2.read()
+        print(blocked2)
+
+        self.assertEqual(blocked1, blocked2)
 
 
 def print_stream(stream, description):
