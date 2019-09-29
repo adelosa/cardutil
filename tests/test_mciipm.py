@@ -1,21 +1,9 @@
 import io
 import unittest
 
-from cardutil.mciipm import VbsWriter, VbsReader, IpmReader, IpmWriter, block_1014
+from cardutil.mciipm import VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014
 
-message_ebcdic_raw = (
-        '1144'.encode('cp500') +
-        b'\xF0\x10\x05\x42\x84\x61\x80\x02\x02\x00\x00\x04\x00\x00\x00\x00' +
-        ('164444555544445555111111000000009999201508151715123456789012333123423579957991200000'
-         '012306120612345612345657994211111111145BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLD'
-         'AUS0080001001Y99901600000000000000011234567806999999').encode('cp500'))
-
-message_ascii_raw = (
-        b'1144' +
-        b'\xF0\x10\x05\x42\x84\x61\x80\x02\x02\x00\x00\x04\x00\x00\x00\x00' +
-        b'164444555544445555111111000000009999201508151715123456789012333123423579957991200000'
-        b'012306120612345612345657994211111111145BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLD'
-        b'AUS0080001001Y99901600000000000000011234567806999999')
+from tests import message_ascii_raw, message_ebcdic_raw
 
 
 class MciIpmTestCase(unittest.TestCase):
@@ -158,6 +146,99 @@ class MciIpmTestCase(unittest.TestCase):
         print(blocked2)
 
         self.assertEqual(blocked1, blocked2)
+
+        out_blocked.seek(0)
+        out = io.BytesIO()
+        unblock_1014(out_blocked, out)
+
+        print_stream(out, "unblocked data")
+
+    def test_unblock1014_exceptions(self):
+        # create correct blocked
+        message_list = [message_ascii_raw for _ in range(10)]
+        out_blocked = io.BytesIO()
+        writer = VbsWriter(out_blocked, blocked=True)
+        for message in message_list:
+            writer.write(message)
+        writer.close()
+        out_blocked.seek(0)
+        blocked = out_blocked.read()
+        print(blocked)
+
+        # remove byte from end of file -- invalid file size
+        out_blocked_missing_data = io.BytesIO(blocked[:-2])
+
+        out_blocked_missing_data.seek(0)
+        out = io.BytesIO()
+        with self.assertRaises(ValueError):
+            unblock_1014(out_blocked_missing_data, out)
+
+        # bad pad chars
+        out_blocked_bad_fill = io.BytesIO(blocked[:-2] + b'$$')
+        out_blocked_bad_fill.seek(0)
+        out = io.BytesIO()
+        with self.assertRaises(ValueError):
+            unblock_1014(out_blocked_bad_fill, out)
+
+    def test_write_read_large_records(self):
+        """
+        Checks that the Block1014 class handles large records (greater than 1014 bytes per record)
+        """
+        blocked = io.BytesIO()
+
+        message_list = [b'*' * 2000 for _ in range(5)]
+        writer = VbsWriter(blocked, blocked=True)
+        for message in message_list:
+            writer.write(message)
+        writer.close()
+        print_stream(blocked, 'blocked')
+
+        reader = VbsReader(blocked, blocked=True)
+        for count, rec in enumerate(reader):
+            self.assertLess(count, 5)
+            self.assertEqual(rec, b'*' * 2000)
+
+    def test_block1014_file_obj(self):
+        """
+        check that can access the underlying file object
+        :return:
+        """
+        my_file = io.BytesIO()
+        my_file_block = Block1014(my_file)
+        self.assertEqual(my_file_block.tell(), 0)
+        self.assertEqual(my_file_block.undefined_func, None)
+        my_file_block.close()
+
+    def test_vbsreader_file_obj(self):
+        """
+        check that can access the underlying file object
+        :return:
+        """
+        my_file = io.BytesIO()
+        vbs = VbsReader(my_file)
+        self.assertEqual(vbs.tell(), 0)
+        self.assertEqual(vbs.undefined_func, None)
+
+    def test_vbswriter_file_obj(self):
+        """
+        check that can access the underlying file object
+        :return:
+        """
+        my_file = io.BytesIO()
+        vbs = VbsWriter(my_file)
+        self.assertEqual(vbs.tell(), 0)
+        self.assertEqual(vbs.undefined_func, None)
+
+    def test_unblock1014_file_obj(self):
+        """
+        check that can access the underlying file object
+        :return:
+        """
+        my_file = io.BytesIO()
+        my_file_block = Unblock1014(my_file)
+        self.assertEqual(my_file_block.tell(), 0)
+        self.assertEqual(my_file_block.undefined_func, None)
+        my_file_block.read()
 
 
 def print_stream(stream, description):

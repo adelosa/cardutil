@@ -3,61 +3,70 @@ import io
 import unittest
 
 from cardutil.mciipm import VbsWriter
-from cardutil.cli import mci_ipm_encode, mci_ipm_param_encode, mci_csv_to_ipm, mci_ipm_to_csv
+from cardutil.cli import (
+    mci_ipm_encode, mci_ipm_param_encode, mci_csv_to_ipm, mci_ipm_to_csv,
+    mci_ipm_encode_cli_parser, mci_ipm_param_encode_cli_parser, mci_ipm_to_csv_cli_parser, mci_csv_to_ipm_cli_parser
+)
 
-message_ebcdic_raw = (
-        '1144'.encode('cp500') +
-        b'\xF0\x10\x05\x42\x84\x61\x80\x02\x02\x00\x00\x04\x00\x00\x00\x00' +
-        ('164444555544445555111111000000009999201508151715123456789012333123423579957991200000'
-         '012306120612345612345657994211111111145BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLD'
-         'AUS0080001001Y99901600000000000000011234567806999999').encode('cp500'))
-
-message_ascii_raw = (
-        b'1144' +
-        b'\xF0\x10\x05\x42\x84\x61\x80\x02\x02\x00\x00\x04\x00\x00\x00\x00' +
-        b'164444555544445555111111000000009999201508151715123456789012333123423579957991200000'
-        b'012306120612345612345657994211111111145BIG BOBS\\70 FERNDALE ST\\ANNERLEY\\4103  QLD'
-        b'AUS0080001001Y999016000000'
-        b''
-        b'00000000011234567806999999')
+from tests import message_ascii_raw
 
 
-class ChangeEncodingTestCase(unittest.TestCase):
-    def test_change_encoding(self):
-        # add 5 records to a list
+class CliTestCase(unittest.TestCase):
+    def test_change_ipm_encoding(self):
+        # create test ipm file
         message_list = [message_ascii_raw for _ in range(5)]
-
-        # create test file
         vbs_in = io.BytesIO()
         writer = VbsWriter(vbs_in, blocked=True)
         for message in message_list:
             writer.write(message)
         writer.close()
 
-        # print it
-        print_stream(vbs_in, "Blocked in data")
+        # process the ipm encode
+        ipm_out = io.BytesIO()
+        mci_ipm_encode(vbs_in, ipm_out, in_encoding='ascii', out_encoding='ascii')
+
+        print_stream(vbs_in, "Input")
+        vbs_in_value = vbs_in.read()
+
+        print_stream(ipm_out, "Output")
+        ipm_out_value = ipm_out.read()
+
+        self.assertEqual(vbs_in_value, ipm_out_value)
+
+    def test_change_ipm_encoding_parser(self):
+        args = vars(mci_ipm_encode_cli_parser().parse_args(['file1.ipm']))
+        self.assertEqual(
+            args,
+            {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': 'ascii',
+             'out_encoding': 'cp500', 'no1014blocking': False})
+
+    def test_change_param_encoding(self):
+        # create test param file
+        message_list = [b"Parameter message data" for _ in range(5)]
+        vbs_in = io.BytesIO()
+        writer = VbsWriter(vbs_in, blocked=True)
+        for message in message_list:
+            writer.write(message)
+        writer.close()
 
         # process the param encoding
         param_out = io.BytesIO()
-        mci_ipm_param_encode(vbs_in, param_out, in_encoding='latin1', out_encoding='latin1')
-        print_stream(param_out, "Change param encoding")
+        mci_ipm_param_encode(vbs_in, param_out, in_encoding='ascii', out_encoding='ascii')
 
-        # process the ipm encode
-        vbs_in.seek(0)
-        ipm_out = io.BytesIO()
-        mci_ipm_encode(vbs_in, ipm_out, in_encoding='latin1', out_encoding='latin1')
-        print_stream(ipm_out, "Change encoding")
-
-        vbs_in.seek(0)
+        print_stream(vbs_in, "Input")
         vbs_in_value = vbs_in.read()
 
-        param_out.seek(0)
+        print_stream(param_out, "Output")
         param_out_value = param_out.read()
+
         self.assertEqual(vbs_in_value, param_out_value)
 
-        ipm_out.seek(0)
-        ipm_out_value = ipm_out.read()
-        self.assertEqual(vbs_in_value, ipm_out_value)
+    def test_change_param_encoding_parser(self):
+        args = vars(mci_ipm_param_encode_cli_parser().parse_args(['file1.ipm']))
+        self.assertEqual(
+            args,
+            {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': 'ascii',
+             'out_encoding': 'cp500', 'no1014blocking': False})
 
     def test_mci_csv_to_ipm_to_csv(self):
         """
@@ -88,6 +97,18 @@ class ChangeEncodingTestCase(unittest.TestCase):
             self.assertEqual(record['DE4'], '100')
         do_test(no_blocking=False)
         do_test(no_blocking=True)
+
+    def test_mci_ipm_to_csv_cli_parser(self):
+        args = vars(mci_ipm_to_csv_cli_parser().parse_args(['file1.ipm']))
+        self.assertEqual(
+            args,
+            {'in_encoding': 'ascii', 'in_filename': 'file1.ipm', 'no1014blocking': False, 'out_filename': None})
+
+    def test_mci_csv_to_ipm_cli_parser(self):
+        args = vars(mci_csv_to_ipm_cli_parser().parse_args(['file1.ipm']))
+        self.assertEqual(
+            args,
+            {'out_encoding': 'ascii', 'in_filename': 'file1.ipm', 'no1014blocking': False, 'out_filename': None})
 
 
 def print_stream(stream, description):

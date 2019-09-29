@@ -12,16 +12,21 @@ def add_version(parser):
 
 
 def mci_ipm_encode_cli():
+    mci_ipm_encode_cli_main(vars(mci_ipm_encode_cli_parser().parse_args()))
+
+
+def mci_ipm_encode_cli_parser():
     parser = argparse.ArgumentParser(prog='mci_ipm_encode', description='Mastercard IPM file encoder')
     parser.add_argument('in_filename')
     parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--in-encoding', default='latin1')
+    parser.add_argument('--in-encoding', default='ascii')
     parser.add_argument('--out-encoding', default='cp500')
     parser.add_argument('--no1014blocking', action='store_true')
     add_version(parser)
+    return parser
 
-    args = vars(parser.parse_args())
 
+def mci_ipm_encode_cli_main(args):
     if not args['out_filename']:
         args['out_filename'] = args['in_filename'] + '.out'
 
@@ -51,15 +56,22 @@ def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='la
 
 
 def mci_ipm_param_encode_cli():
+    mci_ipm_param_encode_cli_main(vars(mci_ipm_param_encode_cli_parser().parse_args()))
+
+
+def mci_ipm_param_encode_cli_parser():
     parser = argparse.ArgumentParser(prog='mci_ipm_param_encode', description='Mastercard IPM param file encoder')
     parser.add_argument('in_filename')
     parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--in-encoding', default='latin1')
+    parser.add_argument('--in-encoding', default='ascii')
     parser.add_argument('--out-encoding', default='cp500')
     parser.add_argument('--no1014blocking', action='store_true')
     add_version(parser)
 
-    args = vars(parser.parse_args())
+    return parser
+
+
+def mci_ipm_param_encode_cli_main(args):
 
     if not args['out_filename']:
         args['out_filename'] = args['in_filename'] + '.out'
@@ -92,15 +104,21 @@ def mci_ipm_param_encode(in_file, out_file, in_encoding='cp500', out_encoding='l
 
 
 def mci_ipm_to_csv_cli():
+    mci_ipm_to_csv_cli_main(vars(mci_ipm_to_csv_cli_parser().parse_args()))
+
+
+def mci_ipm_to_csv_cli_parser():
     parser = argparse.ArgumentParser(prog='mci_ipm_to_csv', description='Mastercard IPM to CSV')
     parser.add_argument('in_filename')
     parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--in-encoding', default='latin1')
+    parser.add_argument('--in-encoding', default='ascii')
     parser.add_argument('--no1014blocking', action='store_true')
     add_version(parser)
 
-    args = vars(parser.parse_args())
+    return parser
 
+
+def mci_ipm_to_csv_cli_main(args):
     if not args['out_filename']:
         args['out_filename'] = args['in_filename'] + '.csv'
 
@@ -123,15 +141,21 @@ def mci_ipm_to_csv(in_ipm, out_csv, in_encoding='latin-1', no1014blocking=False,
 
 
 def mci_csv_to_ipm_cli():
+    mci_csv_to_ipm_cli_main(vars(mci_csv_to_ipm_cli_parser().parse_args()))
+
+
+def mci_csv_to_ipm_cli_parser():
     parser = argparse.ArgumentParser(prog='mci_csv_to_ipm', description='CSV to Mastercard IPM')
     parser.add_argument('in_filename')
     parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--out-encoding', default='latin1')
+    parser.add_argument('--out-encoding', default='ascii')
     parser.add_argument('--no1014blocking', action='store_true')
     add_version(parser)
 
-    args = vars(parser.parse_args())
+    return parser
 
+
+def mci_csv_to_ipm_cli_main(args):
     if not args['out_filename']:
         args['out_filename'] = args['in_filename'] + '.ipm'
 
@@ -139,7 +163,7 @@ def mci_csv_to_ipm_cli():
         mci_csv_to_ipm(in_csv=in_csv, out_ipm=out_ipm, **args)
 
 
-def mci_csv_to_ipm(in_csv, out_ipm, out_encoding='latin1', no1014blocking=False, **_):
+def mci_csv_to_ipm(in_csv, out_ipm, out_encoding='ascii', no1014blocking=False, **_):
     """
     Create a Mastercard IPM file given an input csv file object
 

@@ -5,7 +5,7 @@ Supports Mastercard |reg| PDS field structures.
 Read an ISO8583 message returning dict::
 
     from cardutil import iso8583
-    message_bytes = b'1144\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555566667777'
+    message_bytes = b'1144... iso message ...'
     message_dict = iso8583.loads(message_bytes)
 
 Create an ISO8583 message returning bytes::
@@ -136,7 +136,7 @@ def _iso8583_to_dict(message, bit_config, encoding='latin-1'):
 
     # check that all of message has been consumed, otherwise raise exception
     if message_pointer != len(message_data):
-        raise Exception(
+        raise ValueError(
             "Message data not correct length. Bitmap indicates len={0}, message is len={1}\n{2}".format(
                 message_pointer,
                 len(message_data),
@@ -431,7 +431,7 @@ def _icc_to_dict(field_data):
     TWO_BYTE_TAG_PREFIXES = [b'\x9f', b'\x5f']
 
     field_pointer = 0
-    return_values = {"ICC_DATA": binascii.b2a_hex(field_data)}
+    return_values = {"ICC_DATA": binascii.b2a_hex(field_data).decode()}
 
     while field_pointer < len(field_data):
         # get the tag id (one byte)
@@ -454,7 +454,7 @@ def _icc_to_dict(field_data):
 
         # get the tag data
         de_field_data = field_data[field_pointer+1:field_pointer+field_length+1]
-        de_field_data_display = binascii.b2a_hex(de_field_data)
+        de_field_data_display = binascii.b2a_hex(de_field_data).decode()
         LOGGER.debug("%s", de_field_data_display)
         return_values["TAG" + field_tag_display.upper().decode()] = de_field_data_display
 

@@ -5,12 +5,15 @@ Cardutil is a python package for working with payment card systems.
 * Supports python 3.6 and later.
 * The core library has **zero** package dependencies.
 * Low memory usage
+* Download from `pypi <https://pypi.org/project/cardutil/>`_
 * Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
 
 
 .. image:: https://img.shields.io/pypi/l/cardutil.svg
 
 .. image:: https://img.shields.io/pypi/v/cardutil.svg
+   :target: https://pypi.org/project/cardutil
+   :alt: Pypi download
 
 .. image:: https://img.shields.io/pypi/wheel/cardutil.svg
 
