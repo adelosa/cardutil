@@ -2,6 +2,8 @@
 Parsers for ISO8583 messages.
 Supports Mastercard |reg| PDS field structures.
 
+The parsing functions are modelled on the python standard json library.
+
 Read an ISO8583 message returning dict::
 
     from cardutil import iso8583
@@ -14,10 +16,21 @@ Create an ISO8583 message returning bytes::
     message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
     message_bytes = iso8583.dumps(message_dict)
 
+Add **encoding** parameter if you need different message encoding.
+All standard python encoding codecs are available.
+See `Standard encodings <https://docs.python.org/3/library/codecs.html?highlight=encode#standard-encodings>`_
+::
+
+    message_dict = iso8583.loads(message_bytes, encoding='cp500')
+    iso8583.dumps(message_dict, encoding='cp500')
+
+Set **hex_format** to True if you require a hex format bitmap::
+
+    message_dict = iso8583.loads(message_bytes, hex_bitmap=True)
+    iso8583.dumps(message_dict, hex_bitmap=True)
+
 The iso8583 module provides ISO8583 message parsing functions.
 See `ISO8583 Wikipedia page <https://en.wikipedia.org/wiki/ISO_8583>`_. for more details.
-
-The parsing functions are modelled on the python standard json library.
 
 The values in the object passed represent the elements of an ISO8583 message.
 
@@ -27,6 +40,7 @@ Object keys that that are recognised by the parser:
 * DE(1-127) - Standard fields
 * PDSxxxx - Mastercard PDS fields
 * TAGxxxx - ICC tag fields
+
 
 """
 import binascii
@@ -44,50 +58,54 @@ from cardutil.hexdump import hexdump
 LOGGER = logging.getLogger(__name__)
 
 
-def dumps(obj: dict, encoding='latin-1', iso_config=None):
+def dumps(obj: dict, encoding='ascii', iso_config=None, hex_bitmap=False):
     """
     Serialize obj to a ISO8583 message byte string
 
     :param obj: dict containing message data
     :param encoding: python text encoding scheme
     :param iso_config: iso8583 message configuration dict
+    :param hex_bitmap: bitmap in hex format
     :return: byte string containing ISO8583 message
 
-    >>> import cardutil.iso8583
-    >>> message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
-    >>> cardutil.iso8583.dumps(message_dict)
-    b'1144\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555566667777'
+    The default usage will generate a ascii encoded message with a binary bitmap::
+
+        import cardutil.iso8583
+        message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
+        cardutil.iso8583.dumps(message_dict)
 
     """
     if not iso_config:
         iso_config = config['bit_config']
 
-    output = _dict_to_iso8583(obj, iso_config, encoding)
+    output = _dict_to_iso8583(obj, iso_config, encoding, hex_bitmap)
     return output
 
 
-def loads(b: bytes, encoding='latin-1', iso_config=None):
+def loads(b: bytes, encoding='ascii', iso_config=None, hex_bitmap=False):
     """
     Deserialise b (byte string) to a python object
 
     :param b: bytes containing message
     :param encoding: python text encoding scheme
     :param iso_config: iso8583 message configuration dictionary
+    :param hex_bitmap: bitmap in hex format
     :return: dict containing message data
 
-    >>> import cardutil.iso8583
-    >>> message_bytes = b'1144\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00164444555566667777'
-    >>> cardutil.iso8583.loads(message_bytes)
-    {'MTI': '1144', 'DE2': '4444555566667777'}
+    ::
+
+        import cardutil.iso8583
+        message_bytes = b'1144... iso message ...'
+        cardutil.iso8583.loads(message_bytes)
 
     """
     if not iso_config:
         iso_config = config['bit_config']
 
-    return _iso8583_to_dict(b, iso_config, encoding)
+    return _iso8583_to_dict(b, iso_config, encoding, hex_bitmap)
 
 
-def _iso8583_to_dict(message, bit_config, encoding='latin-1'):
+def _iso8583_to_dict(message, bit_config, encoding='ascii', hex_bitmap=False):
     """
     Convert ISO8583 style message to dictionary
 
@@ -110,8 +128,17 @@ def _iso8583_to_dict(message, bit_config, encoding='latin-1'):
     LOGGER.debug("Processing message: len=%s contents:\n%s", len(message), hexdump(message, result="return"))
     # split raw message into components MessageType(4B), Bitmap(16B),
     # Message(l=*)
-    message_length = len(message)-20
-    (message_type_indicator, binary_bitmap, message_data) = struct.unpack("4s16s" + str(message_length) + "s", message)
+
+    if hex_bitmap:
+        message_length = len(message)-36
+        message_type_indicator, bitmap, message_data = struct.unpack(
+            "4s32s" + str(message_length) + "s", message)
+        binary_bitmap = binascii.unhexlify(bitmap)
+
+    else:
+        message_length = len(message)-20
+        message_type_indicator, binary_bitmap, message_data = struct.unpack(
+            "4s16s" + str(message_length) + "s", message)
 
     return_values = dict()
 
@@ -147,7 +174,7 @@ def _iso8583_to_dict(message, bit_config, encoding='latin-1'):
     return return_values
 
 
-def _dict_to_iso8583(message, bit_config, encoding='latin-1'):
+def _dict_to_iso8583(message, bit_config, encoding='ascii', hex_bitmap=False):
     """
     Convert dictionary to ISO8583 message
 
@@ -191,13 +218,17 @@ def _dict_to_iso8583(message, bit_config, encoding='latin-1'):
     bitarray = BitArray()
     bitarray.fromlist(bitmap_values)
     binary_bitmap = bitarray.tobytes()
+    if hex_bitmap:
+        bitmap = binascii.hexlify(binary_bitmap)
+    else:
+        bitmap = binary_bitmap
 
     mti = message['MTI'].encode(encoding) if message.get('MTI') else b''
-    output_string = mti + binary_bitmap + output_data
+    output_string = mti + bitmap + output_data
     return output_string
 
 
-def _field_to_iso8583(bit_config, field_value, encoding='latin-1'):
+def _field_to_iso8583(bit_config, field_value, encoding='ascii'):
 
     output = ''
     field_value = _pytype_to_string(field_value, bit_config)
@@ -210,7 +241,7 @@ def _field_to_iso8583(bit_config, field_value, encoding='latin-1'):
     return output.encode(encoding)
 
 
-def _iso8583_to_field(bit, bit_config, message_data, encoding='latin-1'):
+def _iso8583_to_field(bit, bit_config, message_data, encoding='ascii'):
     """
     Processes a message bit element
 

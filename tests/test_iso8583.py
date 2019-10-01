@@ -7,17 +7,22 @@ from cardutil.iso8583 import (
     BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
     _pds_to_de, _pds_to_dict, _pytype_to_string, _icc_to_dict, _get_de43_fields)
 
-from tests import message_ebcdic_raw, message_ascii_raw
+from tests import message_ebcdic_raw, message_ascii_raw, message_ascii_raw_hex, message_ebcdic_raw_hex
 
 
 class Iso8583TestCase(unittest.TestCase):
     def test_dumps(self):
+        # use config from package
         out_data = dumps({'MTI': '1234', 'DE2': '123'})
         self.assertEqual(b'1234\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0003123', out_data)
-        # test_config = {"2": {"field_name": "PAN", "field_type": "LLVAR", "field_length": 0}}
+
         # explicitly pass the config
         out_data = dumps({'MTI': '1234', 'DE2': '123'}, iso_config=config["bit_config"])
         self.assertEqual(b'1234\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0003123', out_data)
+
+    def test_dumps_hex_bitmap(self):
+        out_data = dumps({'MTI': '1234', 'DE2': '123'}, hex_bitmap=True)
+        self.assertEqual(b'1234c000000000000000000000000000000003123', out_data)
 
     def test_loads(self):
         self.assertEqual(
@@ -26,9 +31,13 @@ class Iso8583TestCase(unittest.TestCase):
 
     def test_dump_load_ascii(self):
         self.assertEqual(message_ascii_raw, dumps(loads(message_ascii_raw)))
+        self.assertEqual(message_ascii_raw_hex, dumps(loads(message_ascii_raw), hex_bitmap=True))
 
     def test_dump_load_ebcdic(self):
         self.assertEqual(message_ebcdic_raw, dumps(loads(message_ebcdic_raw, encoding='cp500'), encoding='cp500'))
+        self.assertEqual(
+            message_ebcdic_raw_hex,
+            dumps(loads(message_ebcdic_raw_hex, encoding='cp500', hex_bitmap=True), encoding='cp500', hex_bitmap=True))
 
     def test_bitarray(self):
         """
@@ -128,14 +137,14 @@ class Iso8583TestCase(unittest.TestCase):
                          'DE48': '0001001Y', 'PDS0001': 'Y', 'DE49': '999', 'DE63': '0000000000000001',
                          'DE71': 12345678, 'DE94': '999999'}
 
-        ascii_dict = _iso8583_to_dict(message_ascii_raw, config["bit_config"], "latin-1")
+        ascii_dict = _iso8583_to_dict(message_ascii_raw, config["bit_config"], "ascii")
         self.assertEqual(ascii_dict, expected_dict)
         ebcdic_dict = _iso8583_to_dict(message_ebcdic_raw, config["bit_config"], "cp500")
         self.assertEqual(ebcdic_dict, expected_dict)
 
         # check exception when full message not processed
         with self.assertRaises(ValueError):
-            _iso8583_to_dict(message_ascii_raw + b' ', config["bit_config"], "latin-1")
+            _iso8583_to_dict(message_ascii_raw + b' ', config["bit_config"], "ascii")
 
     def test_dict_to_iso8583(self):
         source_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'PDS0001': '1', 'PDS9999': 'Z'}

@@ -3,7 +3,8 @@ cardutil
 Cardutil is a python package for working with payment card systems.
 
 * Supports python 3.6 and later.
-* The core library has **zero** package dependencies.
+* Pythonic interfaces
+* Core library has **zero** package dependencies.
 * Low memory usage
 * Download from `pypi <https://pypi.org/project/cardutil/>`_
 * Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
@@ -28,6 +29,13 @@ Cardutil is a python package for working with payment card systems.
 .. image:: https://readthedocs.org/projects/cardutil/badge/?version=latest
    :target: https://cardutil.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
+
+Features
+--------
+* ISO8583 message parsing
+* Mastercard IPM file reader/writer/encoder
+* Check digit calculator
+* Visa PVV calculator
 
 Contributing
 ------------
@@ -86,4 +94,3 @@ The iso8583 module in cardutil was inspired by the work of Igor V. Custodio from
 original ISO8583 parser. Available at `Pypi:ISO8583-Module <https://pypi.org/project/ISO8583-Module/>`_.
 
 Mastercard is a registered trademark of Mastercard International Incorporated.
-

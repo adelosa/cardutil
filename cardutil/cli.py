@@ -34,7 +34,7 @@ def mci_ipm_encode_cli_main(args):
         mci_ipm_encode(in_file, out_file=out_file, **args)
 
 
-def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='latin-1', no1014blocking=False, **_):
+def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='ascii', no1014blocking=False, **_):
     """
     Change encoding of IPM file from one encoding scheme to another
 
@@ -80,7 +80,7 @@ def mci_ipm_param_encode_cli_main(args):
         mci_ipm_param_encode(in_file, out_file=out_file, **args)
 
 
-def mci_ipm_param_encode(in_file, out_file, in_encoding='cp500', out_encoding='latin-1', no1014blocking=False, **_):
+def mci_ipm_param_encode(in_file, out_file, in_encoding='cp500', out_encoding='ascii', no1014blocking=False, **_):
     """
     Change encoding of parameter file from one encoding format to another.
 
@@ -126,7 +126,7 @@ def mci_ipm_to_csv_cli_main(args):
         mci_ipm_to_csv(in_ipm=in_ipm, out_csv=out_csv, **args)
 
 
-def mci_ipm_to_csv(in_ipm, out_csv, in_encoding='latin-1', no1014blocking=False, **_):
+def mci_ipm_to_csv(in_ipm, out_csv, in_encoding='ascii', no1014blocking=False, **_):
     """
     Create a csv file given an input Mastercard IPM file
 
