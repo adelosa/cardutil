@@ -41,6 +41,13 @@ cardutil.card
    :undoc-members:
    :show-inheritance:
 
+cardutil.key
+-------------
+.. automodule:: cardutil.key
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 cardutil.config
 ---------------
 .. automodule:: cardutil.config

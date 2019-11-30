@@ -1,3 +1,4 @@
+import binascii
 import datetime
 import decimal
 import unittest
@@ -186,6 +187,18 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual(
             _icc_to_dict(b'\x01\x01\x41\x9f\x01\x02\x12\x34'),
             {'ICC_DATA': '0101419f01021234', 'TAG01': '41', 'TAG9F01': '1234'})
+
+    def test_icc_to_dict_null_eof(self):
+        # issue and test data provided by Diego Felipe Maia (diegofmaia28@hotmail.com)
+        test_de55 = binascii.unhexlify(
+            '9f26081c89a48c0c4c3a309f2701809f10120110a04001240000000000000000000000ff9f370401'
+            'bd0f6d9f36020011950500000480009a031909069c01009f02060000000289985f2a020032820239'
+            '009f1a0200329f03060000000000009f1e0837383636343738349f3303e0f0c89f3501009f090200'
+            '009f34034203008407a0000000041010910aaf6f5977b4ca29250012000000000000000000000000'
+            '00000000000000000000000000000000000000000000000000000000000000000000000000000000'
+            '00000000000000000000000000000000000000000000000000000000000000000000000000000000'
+            '000000000000000000000000000000')
+        print(_icc_to_dict(test_de55))
 
     def test_get_de43_fields(self):
         self.assertEqual(_get_de43_fields('THIS DOES NOT MATCH REGEX'), {})
