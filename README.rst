@@ -1,14 +1,7 @@
 cardutil
 ========
-Cardutil is a python package for working with payment card systems.
-
-* Supports python 3.6 and later.
-* Pythonic interfaces
-* Core library has **zero** package dependencies.
-* Low memory usage
-* Download from `pypi <https://pypi.org/project/cardutil/>`_
-* Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
-* Source hosted at `Bitbucket <https://bitbucket.com/hoganman/cardutil>`_
+Cardutil is a python package for working with payment card systems including
+command line tools for working with Mastercard IPM files.
 
 
 .. image:: https://img.shields.io/pypi/l/cardutil.svg
@@ -36,54 +29,25 @@ Features
 * ISO8583 message parsing
 * Mastercard IPM file reader/writer/encoder
 * Check digit calculator
+* Encrypted pin block generator
 * Visa PVV calculator
 
-Contributing
-------------
+Installing
+----------
+Install and update using pip::
 
-install
-~~~~~~~
+    pip install -U cardutil
 
-::
 
-    $ git clone https://bitbucket.org/hoganman/cardutil.git
-    $ pip install -e ".[test]"
-
-unit test
-~~~~~~~~~
-
-::
-
-    $ pytest
-
-coverage
-~~~~~~~~
-
-::
-
-    $ coverage run -m pytest
-    $ coverage report -m
-    $ coverage html
-    $ open htmlcov/index.html
-
-docs
-~~~~
-
-::
-
-    $ pip install -e ".[docs]"
-    $ make html -C ./docs
-    $ open ./docs/build/html/index.html
-
-release
-~~~~~~~
-.. note::
-   Ensure that the source tree is clean before performing this process
-
-.. code-block:: bash
-
-    $ bumpversion (patch|minor|major)
-    $ git push --follow-tags
+Information
+-----------
+* Supports python 3.6 and later.
+* Pythonic programmer interfaces
+* Core library has **zero** package dependencies.
+* Low memory usage
+* Download from `pypi <https://pypi.org/project/cardutil/>`_
+* Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
+* Source hosted at `Bitbucket <https://bitbucket.com/hoganman/cardutil>`_
 
 acknowledgements
 ----------------

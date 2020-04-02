@@ -12,4 +12,5 @@ contents
 
    cli
    api
+   contributing
    license

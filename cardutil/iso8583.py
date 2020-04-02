@@ -1,46 +1,62 @@
 """
 Parsers for ISO8583 messages.
-Supports Mastercard |reg| PDS field structures.
-
-The parsing functions are modelled on the python standard json library.
-
-Read an ISO8583 message returning dict::
-
-    from cardutil import iso8583
-    message_bytes = b'1144... iso message ...'
-    message_dict = iso8583.loads(message_bytes)
-
-Create an ISO8583 message returning bytes::
-
-    from cardutil import iso8583
-    message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
-    message_bytes = iso8583.dumps(message_dict)
-
-Add **encoding** parameter if you need different message encoding.
-All standard python encoding codecs are available.
-See `Standard encodings <https://docs.python.org/3/library/codecs.html?highlight=encode#standard-encodings>`_
-::
-
-    message_dict = iso8583.loads(message_bytes, encoding='cp500')
-    iso8583.dumps(message_dict, encoding='cp500')
-
-Set **hex_format** to True if you require a hex format bitmap::
-
-    message_dict = iso8583.loads(message_bytes, hex_bitmap=True)
-    iso8583.dumps(message_dict, hex_bitmap=True)
 
 The iso8583 module provides ISO8583 message parsing functions.
 See `ISO8583 Wikipedia page <https://en.wikipedia.org/wiki/ISO_8583>`_. for more details.
+Also supports Mastercard |reg| PDS field structures.
 
-The values in the object passed represent the elements of an ISO8583 message.
+The parsing functions are modelled on the python standard json library.
+The functions convert raw ISO8583 messages to python dictionaries.
 
-Object keys that that are recognised by the parser:
+Dictionary keys that represent the elements of an ISO8583 message.
 
 * MTI - Message type indicator
 * DE(1-127) - Standard fields
 * PDSxxxx - Mastercard PDS fields
 * TAGxxxx - ICC tag fields
 
+Import the library::
+
+    from cardutil.iso8583 import dumps, loads
+
+Read an ISO8583 message returning dict::
+
+    >>> import binascii
+    >>> binary_bitmap = binascii.unhexlify('c0000000000000000000000000000000')
+    >>> message_bytes = b'1144' + binary_bitmap + b'164444555566667777'
+    >>> message_dict = loads(message_bytes)
+    >>> message_dict
+    {'MTI': '1144', 'DE2': '4444555566667777'}
+
+Create an ISO8583 message returning bytes::
+
+    >>> message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
+    >>> message_bytes = dumps(message_dict)
+    >>> message_bytes
+    b'1144\\xc0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00164444555566667777'
+
+
+Add **encoding** parameter if you need different message encoding.
+All standard python encoding codecs are available.
+See `Standard encodings <https://docs.python.org/3/library/codecs.html?highlight=encode#standard-encodings>`_
+::
+
+    >>> message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
+    >>> message_bytes = dumps(message_dict, encoding='cp500')
+    >>> message_bytes
+    b'\\xf1\\xf1\\xf4\\xf4\\xc0\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\xf1\\xf6\\xf4\\xf4\\xf4\\xf4\\xf5\\xf5\\xf5\\xf5\\xf6\\xf6\\xf6\\xf6\\xf7\\xf7\\xf7\\xf7'
+    >>> message_dict = loads(message_bytes, encoding='cp500')
+    >>> message_dict
+    {'MTI': '1144', 'DE2': '4444555566667777'}
+
+Set **hex_bitmap** to True if you require a hex format bitmap::
+
+    >>> message_bytes = dumps(message_dict, hex_bitmap=True)
+    >>> message_bytes
+    b'1144c0000000000000000000000000000000164444555566667777'
+    >>> message_dict = loads(message_bytes, hex_bitmap=True)
+    >>> message_dict
+    {'MTI': '1144', 'DE2': '4444555566667777'}
 
 """
 import binascii
@@ -520,3 +536,8 @@ def _get_de43_fields(de43_field):
     field_dict = field_match.groupdict()
 
     return field_dict
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
