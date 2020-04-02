@@ -3,16 +3,12 @@ import io
 import unittest
 
 from cardutil.mciipm import VbsWriter
-from cardutil.cli import (
-    mci_ipm_encode, mci_ipm_param_encode, mci_csv_to_ipm, mci_ipm_to_csv,
-    mci_ipm_encode_cli_parser, mci_ipm_param_encode_cli_parser, mci_ipm_to_csv_cli_parser, mci_csv_to_ipm_cli_parser
-)
-
+from cardutil.cli import mci_ipm_encode, mci_ipm_param_encode, mci_ipm_to_csv, mci_csv_to_ipm
 from tests import message_ascii_raw
 
 
 class CliTestCase(unittest.TestCase):
-    def test_change_ipm_encoding(self):
+    def test_mci_ipm_encode(self):
         # create test ipm file
         message_list = [message_ascii_raw for _ in range(5)]
         vbs_in = io.BytesIO()
@@ -23,7 +19,7 @@ class CliTestCase(unittest.TestCase):
 
         # process the ipm encode
         ipm_out = io.BytesIO()
-        mci_ipm_encode(vbs_in, ipm_out, in_encoding='ascii', out_encoding='ascii')
+        mci_ipm_encode.mci_ipm_encode(vbs_in, ipm_out, in_encoding='ascii', out_encoding='ascii')
 
         print_stream(vbs_in, "Input")
         vbs_in_value = vbs_in.read()
@@ -33,14 +29,14 @@ class CliTestCase(unittest.TestCase):
 
         self.assertEqual(vbs_in_value, ipm_out_value)
 
-    def test_change_ipm_encoding_parser(self):
-        args = vars(mci_ipm_encode_cli_parser().parse_args(['file1.ipm']))
+    def test_mci_ipm_encode_cli_parser(self):
+        args = vars(mci_ipm_encode.cli_parser().parse_args(['file1.ipm']))
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': 'ascii',
              'out_encoding': 'cp500', 'no1014blocking': False})
 
-    def test_change_param_encoding(self):
+    def test_mci_ipm_param_encode(self):
         # create test param file
         message_list = [b"Parameter message data" for _ in range(5)]
         vbs_in = io.BytesIO()
@@ -51,7 +47,7 @@ class CliTestCase(unittest.TestCase):
 
         # process the param encoding
         param_out = io.BytesIO()
-        mci_ipm_param_encode(vbs_in, param_out, in_encoding='ascii', out_encoding='ascii')
+        mci_ipm_param_encode.mci_ipm_param_encode(vbs_in, param_out, in_encoding='ascii', out_encoding='ascii')
 
         print_stream(vbs_in, "Input")
         vbs_in_value = vbs_in.read()
@@ -61,8 +57,8 @@ class CliTestCase(unittest.TestCase):
 
         self.assertEqual(vbs_in_value, param_out_value)
 
-    def test_change_param_encoding_parser(self):
-        args = vars(mci_ipm_param_encode_cli_parser().parse_args(['file1.ipm']))
+    def test_mci_ipm_param_encode_parser(self):
+        args = vars(mci_ipm_param_encode.cli_parser().parse_args(['file1.ipm']))
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': 'ascii',
@@ -79,13 +75,13 @@ class CliTestCase(unittest.TestCase):
             in_csv.seek(0)
             out_ipm = io.BytesIO()
 
-            mci_csv_to_ipm(in_csv=in_csv, out_ipm=out_ipm, no1014blocking=no_blocking)
+            mci_csv_to_ipm.mci_csv_to_ipm(in_csv=in_csv, out_ipm=out_ipm, no1014blocking=no_blocking)
             out_ipm.seek(0)
             print_stream(out_ipm, 'out_ipm')
             out_ipm.seek(0)
 
             out_csv = io.StringIO()
-            mci_ipm_to_csv(in_ipm=out_ipm, out_csv=out_csv, no1014blocking=no_blocking)
+            mci_ipm_to_csv.mci_ipm_to_csv(in_ipm=out_ipm, out_csv=out_csv, no1014blocking=no_blocking)
             print_stream(out_csv, 'out_csv')
             out_csv.seek(0)
 
@@ -99,13 +95,13 @@ class CliTestCase(unittest.TestCase):
         do_test(no_blocking=True)
 
     def test_mci_ipm_to_csv_cli_parser(self):
-        args = vars(mci_ipm_to_csv_cli_parser().parse_args(['file1.ipm']))
+        args = vars(mci_ipm_to_csv.cli_parser().parse_args(['file1.ipm']))
         self.assertEqual(
             args,
             {'in_encoding': 'ascii', 'in_filename': 'file1.ipm', 'no1014blocking': False, 'out_filename': None})
 
     def test_mci_csv_to_ipm_cli_parser(self):
-        args = vars(mci_csv_to_ipm_cli_parser().parse_args(['file1.ipm']))
+        args = vars(mci_csv_to_ipm.cli_parser().parse_args(['file1.ipm']))
         self.assertEqual(
             args,
             {'out_encoding': 'ascii', 'in_filename': 'file1.ipm', 'no1014blocking': False, 'out_filename': None})

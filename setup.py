@@ -15,10 +15,10 @@ setup(name='cardutil',
       install_requires=[],
       entry_points={
           'console_scripts': [
-              'mci_ipm_to_csv = cardutil.cli:mci_ipm_to_csv_cli',
-              'mci_csv_to_ipm = cardutil.cli:mci_csv_to_ipm_cli',
-              'mci_ipm_encode = cardutil.cli:mci_ipm_encode_cli',
-              'mci_ipm_param_encode = cardutil.cli:mci_ipm_param_encode_cli',
+              'mci_ipm_to_csv = cardutil.cli.mci_ipm_to_csv:cli_entry',
+              'mci_csv_to_ipm = cardutil.cli.mci_csv_to_ipm:cli_entry',
+              'mci_ipm_encode = cardutil.cli.mci_ipm_encode:cli_entry',
+              'mci_ipm_param_encode = cardutil.cli.mci_ipm_param_encode:cli_entry',
           ]
       },
       extras_require={
