@@ -4,7 +4,7 @@ readme = open('README.rst', 'r').read()
 
 setup(name='cardutil',
       packages=find_packages(),
-      version='0.1.8',
+      version='0.2.0',
       license='MIT',
       description='Python package for working with payment card systems',
       long_description=readme,
