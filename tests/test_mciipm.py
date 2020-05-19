@@ -1,7 +1,9 @@
 import io
 import unittest
 
-from cardutil.mciipm import VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014
+from cardutil.mciipm import (
+    VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014, vbs_list_to_bytes,
+    vbs_bytes_to_list)
 
 from tests import message_ascii_raw, message_ebcdic_raw
 
@@ -239,6 +241,15 @@ class MciIpmTestCase(unittest.TestCase):
         self.assertEqual(my_file_block.tell(), 0)
         self.assertEqual(my_file_block.undefined_func, None)
         my_file_block.read()
+
+    def test_vbs_list_to_bytes_to_list(self):
+        test_bytes_list = [b'aaa', b'bbb', b'ccc']
+        vbs_data = vbs_list_to_bytes(test_bytes_list)
+        print(vbs_data)
+        self.assertEqual(vbs_data, b'\x00\x00\x00\x03aaa\x00\x00\x00\x03bbb\x00\x00\x00\x03ccc\x00\x00\x00\x00')
+        vbs_list = vbs_bytes_to_list(vbs_data)
+        print(vbs_list)
+        self.assertEqual(vbs_list, test_bytes_list)
 
 
 def print_stream(stream, description):

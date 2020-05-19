@@ -85,7 +85,7 @@ In this case, there is only one increment
     000003F0: 40 40 40 40 40 40                                 @@@@@@
 
 """
-
+import io
 import logging
 import struct
 
@@ -460,3 +460,23 @@ def block_1014(input_data, output_data):
         output_data.write(record + (pad_char * 2))
     output_data.seek(0)
     input_data.seek(0)
+
+
+def vbs_list_to_bytes(byte_list: list, blocked: bool = False) -> bytes:
+    """
+    Convenience function for creating VBS byte strings (optionally blocked) from list of byte strings
+    """
+    file_out = io.BytesIO()
+    vbs_out = VbsWriter(file_out, blocked=blocked)
+    for rec in byte_list:
+        vbs_out.write(rec)
+    vbs_out.close()
+    return file_out.read()
+
+
+def vbs_bytes_to_list(vbs_bytes: bytes, blocked: bool = False) -> list:
+    """
+    Convenience function for unpacking VBS byte strings to byte string list
+    """
+    file_in = io.BytesIO(vbs_bytes)
+    return [record for record in VbsReader(file_in, blocked=blocked)]
