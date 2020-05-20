@@ -22,7 +22,7 @@ setup(name='cardutil',
           ]
       },
       extras_require={
-        'docs': ['sphinx', 'sphinx_rtd_theme'],
+        'docs': ['sphinx', 'sphinx_rtd_theme', 'cryptography'],
         'test': ['flake8', 'pytest', 'bump2version', 'coverage', 'cryptography'],
         'pin': ['cryptography']
       },
