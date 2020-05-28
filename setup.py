@@ -24,7 +24,7 @@ setup(name='cardutil',
       extras_require={
         'docs': ['sphinx', 'sphinx_rtd_theme', 'cryptography'],
         'test': ['flake8', 'pytest', 'bump2version', 'coverage', 'cryptography'],
-        'pin': ['cryptography']
+        'crypto': ['cryptography']
       },
       classifiers=[
             'Development Status :: 5 - Production/Stable',

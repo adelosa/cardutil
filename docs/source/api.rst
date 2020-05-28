@@ -27,9 +27,9 @@ cardutil.mciipm
    :undoc-members:
    :show-inheritance:
 
-cardutil.pin
-------------
-.. automodule:: cardutil.pin
+cardutil.pinblock
+-----------------
+.. automodule:: cardutil.pinblock
    :members:
    :undoc-members:
    :show-inheritance:
