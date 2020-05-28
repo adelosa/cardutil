@@ -123,13 +123,13 @@ class Iso8583TestCase(unittest.TestCase):
                 {'field_type': 'FIXED', 'field_python_type': 'decimal', 'field_length': 20},
                 decimal.Decimal("123.432")))
         self.assertEqual(
-            b'201401021516', _field_to_iso8583(
+            b'140102151610', _field_to_iso8583(
                 {'field_type': 'FIXED', 'field_python_type': 'datetime', 'field_length': 12},
-                datetime.datetime(2014, 1, 2, 15, 16)))
+                datetime.datetime(2014, 1, 2, 15, 16, 10)))
 
     def test_iso8583_to_dict(self):
         expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': 9999,
-                         'DE12': datetime.datetime(2015, 8, 15, 17, 15),
+                         'DE12': datetime.datetime(2015, 8, 15, 17, 15, 0),
                          'DE22': '123456789012', 'DE24': '333', 'DE26': 1234,
                          'DE31': '57995799120000001230612', 'DE33': '123456', 'DE38': '123456',
                          'DE42': '579942111111111', 'DE43': 'BIG BOBS\\80 KERNDALE ST\\DANERLEY\\3103  VICAUS',
@@ -180,7 +180,7 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual('00001', _pytype_to_string('1', {'field_python_type': 'int', 'field_length': 5}))
         self.assertEqual('00001', _pytype_to_string('1', {'field_python_type': 'long', 'field_length': 5}))
         self.assertEqual(
-            '201801011715',
+            '180101171500',
             _pytype_to_string(datetime.datetime(2018, 1, 1, 17, 15), {'field_python_type': 'datetime'}))
 
     def test_icc_to_dict(self):

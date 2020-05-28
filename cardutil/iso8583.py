@@ -352,7 +352,7 @@ def _string_to_pytype(field_data, bit_config):
         field_data = decimal.Decimal(field_data)
     if field_python_type == "datetime":
         field_data = datetime.datetime.strptime(
-            field_data, "%Y%m%d%H%M")
+            field_data, "%y%m%d%H%M%S")
     return field_data
 
 
@@ -371,7 +371,7 @@ def _pytype_to_string(field_data, bit_config):
     if field_python_type == "decimal":
         return_string = format(decimal.Decimal(field_data), '0' + str(_get_parameter(bit_config, 'field_length')) + 'f')
     if field_python_type == "datetime":
-        return_string = format(field_data, "%Y%m%d%H%M")
+        return_string = format(field_data, "%y%m%d%H%M%S")
     return return_string
 
 
