@@ -8,48 +8,48 @@ Developer API
 * :ref:`search`
 
 Installation
-------------
+============
 ::
 
     $ pip install cardutil
 
 cardutil.iso8583
-----------------
+================
 .. automodule:: cardutil.iso8583
    :members:
    :undoc-members:
    :show-inheritance:
 
 cardutil.mciipm
----------------
+===============
 .. automodule:: cardutil.mciipm
    :members:
    :undoc-members:
    :show-inheritance:
 
 cardutil.pinblock
------------------
+=================
 .. automodule:: cardutil.pinblock
    :members:
    :undoc-members:
    :show-inheritance:
 
 cardutil.card
--------------
+=============
 .. automodule:: cardutil.card
    :members:
    :undoc-members:
    :show-inheritance:
 
 cardutil.key
--------------
+============
 .. automodule:: cardutil.key
    :members:
    :undoc-members:
    :show-inheritance:
 
 cardutil.config
----------------
+===============
 .. automodule:: cardutil.config
    :members:
    :undoc-members:

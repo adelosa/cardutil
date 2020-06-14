@@ -1,3 +1,4 @@
+========
 cardutil
 ========
 Cardutil is a python package for working with payment card systems including
@@ -25,7 +26,7 @@ command line tools for working with Mastercard IPM files.
    :alt: Documentation Status
 
 Features
---------
+========
 * ISO8583 message parsing
 * Mastercard IPM file reader/writer/encoder
 * Check digit calculator
@@ -33,14 +34,14 @@ Features
 * Visa PVV calculator
 
 Installing
-----------
+==========
 Install and update using pip::
 
     pip install -U cardutil
 
 
 Information
------------
+===========
 * Supports python 3.6 and later.
 * Pythonic programmer interfaces
 * Core library has **zero** package dependencies.
@@ -50,7 +51,7 @@ Information
 * Source hosted at `Bitbucket <https://bitbucket.com/hoganman/cardutil>`_
 
 acknowledgements
-----------------
+================
 The python `hexdump` library is embedded in this package. Many thank to Anatoly Techtonik <techtonik@gmail.com>
 This library is a life saver for debugging issues with binary data.
 Available at `Pypi:hexdump <https://pypi.org/project/hexdump/>`_.
