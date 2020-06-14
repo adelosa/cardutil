@@ -13,29 +13,32 @@ stepdefinitions:
       script:
         - pip install -e ".[test]"
         - coverage run -m pytest
-        - coverage report --fail-under 75 -m
+        - coverage report --fail-under 95 -m
   - pypi-test: &pypi-test
       name: deploy package to test pypi
       deployment: Test
       script:
-        - pipe: atlassian/pypi-publish:0.2.7
+        - pipe: atlassian/pypi-publish:0.2.14
           variables:
             PYPI_USERNAME: $PYPI_USERNAME
             PYPI_PASSWORD: $PYPI_TEST_PASSWORD
             REPOSITORY: 'https://test.pypi.org/legacy/'
+            DISTRIBUTIONS: 'sdist bdist_wheel'
   - pypi-prod: &pypi-prod
       name: deploy package to prod pypi
       deployment: Production
       script:
-        - pipe: atlassian/pypi-publish:0.2.7
+        - pipe: atlassian/pypi-publish:0.2.14
           variables:
             PYPI_USERNAME: $PYPI_USERNAME
             PYPI_PASSWORD: $PYPI_PASSWORD
+            DISTRIBUTIONS: 'sdist bdist_wheel'
 
 pipelines:
   default:
     - step: *test
     - step: *coverage
+    - step: *pypi-test
 
   tags:
     v*:
