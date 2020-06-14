@@ -287,20 +287,22 @@ class IpmReader(VbsReader):
                 print(record)
 
     """
-    def __init__(self, ipm_file, encoding='ascii', **kwargs):
+    def __init__(self, ipm_file, encoding=None, iso_config=None, **kwargs):
         """
         Create a new IpmReader
 
         :param ipm_file: the file object to read
         :param encoding: the file encoding
+        :param config: config dict with key bit_config
         """
         self.encoding = encoding
+        self.iso_config = iso_config
         super(IpmReader, self).__init__(ipm_file, **kwargs)
 
     def __next__(self):
         vbs_record = super(IpmReader, self).__next__()
         LOGGER.debug(f'{len(vbs_record)}: {vbs_record}')
-        return iso8583.loads(vbs_record, encoding=self.encoding)
+        return iso8583.loads(vbs_record, encoding=self.encoding, iso_config=self.iso_config)
 
 
 class VbsWriter(object):
@@ -309,10 +311,10 @@ class VbsWriter(object):
 
     The writer can be used as follows::
 
-        with open('vbs_out.bin', 'wb') as vbs_out:
-            writer = VbsWriter(vbs_out)
-            writer.write(b'This is the record')
-            writer.close()
+        >>> with io.BytesIO() as vbs_out:
+        ...     writer = VbsWriter(vbs_out)
+        ...     writer.write(b'This is the record')
+        ...     writer.close()
 
     The message is a byte string containing the data.
 
@@ -368,34 +370,32 @@ class IpmWriter(VbsWriter):
 
     ::
 
-        from cardutil.mciipm import IpmWriter
-        with open('ipm_out.bin', 'wb') as ipm_out:
-            writer = IpmWriter(ipm_out)
-            writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
-            writer.close()
+        >>> with io.BytesIO() as ipm_out:
+        ...    writer = IpmWriter(ipm_out)
+        ...    writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
+        ...    writer.close()
 
     If the required file is 1014 block format, then set the ``blocked`` parameter to True.
 
     ::
 
-        from cardutil.mciipm import IpmWriter
-        with open('ipm_out.bin', 'wb') as ipm_out:
-            writer = IpmWriter(ipm_out, blocked=True)
-            writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
-            writer.close()
+        >>> with io.BytesIO() as ipm_out:
+        ...     writer = IpmWriter(ipm_out, blocked=True)
+        ...     writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
+        ...     writer.close()
 
-    By default, the file output is ``ascii`` encoded, but you can provide an alternative
-    encoding if required. All standard python encoding schemes are supported.
-    Mainframe systems likely use ``cp500``
+    You can provide the specific file encoding if required.
+    All standard python encoding schemes are supported. Mainframe systems likely use ``cp500``
 
     ::
 
-       writer = IpmWriter(vbs_out, encoding='cp500')
-       writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
-       writer.close()
+       >>> with io.BytesIO() as ipm_out:
+       ...     writer = IpmWriter(ipm_out, encoding='cp500')
+       ...     writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
+       ...     writer.close()
 
     """
-    def __init__(self, file_obj, encoding='ascii', **kwargs):
+    def __init__(self, file_obj, encoding=None, iso_config=None, **kwargs):
         """
         Create a new IpmWriter
 
@@ -403,6 +403,7 @@ class IpmWriter(VbsWriter):
         :param encoding: the file encoding
         """
         self.encoding = encoding
+        self.iso_config = iso_config
         super(IpmWriter, self).__init__(file_obj, **kwargs)
 
     def write(self, obj):
@@ -415,7 +416,7 @@ class IpmWriter(VbsWriter):
 
         :return: None
         """
-        record = iso8583.dumps(obj, encoding=self.encoding)
+        record = iso8583.dumps(obj, encoding=self.encoding, iso_config=self.iso_config)
         super(IpmWriter, self).write(record)
 
 
@@ -480,3 +481,8 @@ def vbs_bytes_to_list(vbs_bytes: bytes, blocked: bool = False) -> list:
     """
     file_in = io.BytesIO(vbs_bytes)
     return [record for record in VbsReader(file_in, blocked=blocked)]
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

@@ -1,6 +1,14 @@
 import binascii
 
 
+def print_stream(stream, description):
+    stream.seek(0)
+    data = stream.read()
+    print('***' + description + '***')
+    print(data)
+    stream.seek(0)
+
+
 def test_message(encoding='ascii', hex_bitmap=False):
     binary_bitmap = b'\xF0\x10\x05\x42\x84\x61\x80\x02\x02\x00\x00\x04\x00\x00\x00\x00'
     bitmap = binary_bitmap

@@ -5,7 +5,7 @@ from cardutil.mciipm import (
     VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014, vbs_list_to_bytes,
     vbs_bytes_to_list)
 
-from tests import message_ascii_raw, message_ebcdic_raw
+from tests import message_ascii_raw, message_ebcdic_raw, print_stream
 
 
 class MciIpmTestCase(unittest.TestCase):
@@ -63,6 +63,26 @@ class MciIpmTestCase(unittest.TestCase):
             print(results)
 
         self.assertEqual(results, records)
+
+    def test_ipm_reader_with_config(self):
+        record = {'MTI': '1111', 'DE2': '8888999988889999'}
+        # the following config applies the PAN masking formatter
+        bit_config = {"2": {"field_name": "PAN", "field_type": "LLVAR", "field_length": 0, "field_processor": "PAN"}}
+        records = [record]
+
+        with io.BytesIO() as out_data:
+            writer = IpmWriter(out_data)
+            for record in records:
+                writer.write(record)
+            writer.close()
+
+            print_stream(out_data, 'VBS output file')
+            reader = IpmReader(out_data, iso_config=bit_config)
+
+            results = list(reader)
+
+        print(results)
+        self.assertEqual(results, [{'MTI': '1111', 'DE2': '888899******9999'}])
 
     def test_ipmwriter_blocked_file(self):
         record = {'MTI': '1111', 'DE2': '8888999988889999'}
@@ -250,14 +270,6 @@ class MciIpmTestCase(unittest.TestCase):
         vbs_list = vbs_bytes_to_list(vbs_data)
         print(vbs_list)
         self.assertEqual(vbs_list, test_bytes_list)
-
-
-def print_stream(stream, description):
-    stream.seek(0)
-    data = stream.read()
-    print(description)
-    print(data)
-    stream.seek(0)
 
 
 if __name__ == '__main__':

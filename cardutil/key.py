@@ -43,7 +43,6 @@ def calculate_kcv(binary_key: bytes) -> str:
 def encrypt_key(key_to_encrypt: str, master_key: str) -> str:
     binary_key = unhexlify(master_key)
     binary_data = unhexlify(key_to_encrypt)
-    # cipher = Cipher(algorithms.TripleDES(binary_key), modes.CBC(unhexlify('00' * 8)), backend=backend)
     cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
     encryptor = cipher.encryptor()
     return encryptor.update(binary_data) + encryptor.finalize()

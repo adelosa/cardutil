@@ -5,26 +5,30 @@ from cardutil.mciipm import IpmReader, IpmWriter
 
 
 def cli_entry():
-    args = vars(cli_parser().parse_args())
-    if not args['out_filename']:
-        args['out_filename'] = args['in_filename'] + '.out'
+    cli_run(**vars(cli_parser().parse_args()))
 
-    with open(args['in_filename'], 'rb') as in_file, open(args['out_filename'], 'wb') as out_file:
-        mci_ipm_encode(in_file, out_file=out_file, **args)
+
+def cli_run(**kwargs):
+
+    if not kwargs.get('out_filename'):
+        kwargs['out_filename'] = kwargs['in_filename'] + '.out'
+
+    with open(kwargs['in_filename'], 'rb') as in_file, open(kwargs['out_filename'], 'wb') as out_file:
+        mci_ipm_encode(in_file, out_file=out_file, **kwargs)
 
 
 def cli_parser():
     parser = argparse.ArgumentParser(prog='mci_ipm_encode', description='Mastercard IPM file encoder')
     parser.add_argument('in_filename')
     parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--in-encoding', default='ascii')
-    parser.add_argument('--out-encoding', default='cp500')
+    parser.add_argument('--in-encoding')
+    parser.add_argument('--out-encoding')
     parser.add_argument('--no1014blocking', action='store_true')
     add_version(parser)
     return parser
 
 
-def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='ascii', no1014blocking=False, **_):
+def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='latin_1', no1014blocking=False, **_):
     """
     Change encoding of IPM file from one encoding scheme to another
 

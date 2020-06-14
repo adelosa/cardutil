@@ -106,12 +106,13 @@ How to generate pin verification value::
 import abc
 import binascii
 import secrets
+import logging
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 
-
 backend = default_backend()
+LOGGER = logging.getLogger(__name__)
 
 
 class AbstractPinBlock(abc.ABC):
@@ -234,7 +235,7 @@ class Iso4PinBlock(AbstractPinBlock):
             self.random_value = random_value
         else:
             self.random_value = secrets.randbits(64)
-            print(f'random_value={self.random_value}')
+            LOGGER.debug(f'random_value={self.random_value}')
 
     def to_bytes(self) -> bytes:
         p1 = binascii.unhexlify(f'{"4" + str(len(self.pin)) + self.pin:a<16}{self.random_value:016x}')

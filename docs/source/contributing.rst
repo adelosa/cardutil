@@ -7,13 +7,15 @@ install
 ::
 
     $ git clone https://bitbucket.org/hoganman/cardutil.git
-    $ pip install -e ".[test]"
+    $ python setup.py develop
+
 
 unit test
 ~~~~~~~~~
 
 ::
 
+    $ pip install -e ".[test]"
     $ pytest
 
 coverage
@@ -35,6 +37,12 @@ docs
     $ make html -C ./docs
     WINDOWS> docs\make.bat html -C docs
     $ open ./docs/build/html/index.html
+
+.. note:: If you are updating documentation and want changes in source code reflected
+          in the documentation then you must install using `python setup.py develop`.
+
+          If you install cardutil package using pip, or don't use the develop command then
+          it will use lib/site_packages code to generate.
 
 release
 ~~~~~~~

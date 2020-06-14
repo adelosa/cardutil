@@ -37,8 +37,10 @@ Create an ISO8583 message returning bytes::
 
 
 Add **encoding** parameter if you need different message encoding.
-All standard python encoding codecs are available.
-See `Standard encodings <https://docs.python.org/3/library/codecs.html?highlight=encode#standard-encodings>`_
+All `standard python encoding codecs
+<https://docs.python.org/3/library/codecs.html?highlight=encode#standard-encodings>`_ are available.
+Default is **latin_1**.
+
 ::
 
     >>> message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
@@ -72,9 +74,10 @@ from cardutil.config import config
 from cardutil.hexdump import hexdump
 
 LOGGER = logging.getLogger(__name__)
+DEFAULT_ENCODING = 'latin_1'
 
 
-def dumps(obj: dict, encoding='ascii', iso_config=None, hex_bitmap=False):
+def dumps(obj: dict, encoding=None, iso_config=None, hex_bitmap=False):
     """
     Serialize obj to a ISO8583 message byte string
 
@@ -84,13 +87,15 @@ def dumps(obj: dict, encoding='ascii', iso_config=None, hex_bitmap=False):
     :param hex_bitmap: bitmap in hex format
     :return: byte string containing ISO8583 message
 
-    The default usage will generate a ascii encoded message with a binary bitmap::
+    The default usage will generate a latin_1 encoded message with a binary bitmap::
 
         import cardutil.iso8583
         message_dict = {'MTI': '1144', 'DE2': '4444555566667777'}
         cardutil.iso8583.dumps(message_dict)
 
     """
+    if not encoding:
+        encoding = DEFAULT_ENCODING
     if not iso_config:
         iso_config = config['bit_config']
 
@@ -98,7 +103,7 @@ def dumps(obj: dict, encoding='ascii', iso_config=None, hex_bitmap=False):
     return output
 
 
-def loads(b: bytes, encoding='ascii', iso_config=None, hex_bitmap=False):
+def loads(b: bytes, encoding=None, iso_config=None, hex_bitmap=False):
     """
     Deserialise b (byte string) to a python object
 
@@ -115,13 +120,15 @@ def loads(b: bytes, encoding='ascii', iso_config=None, hex_bitmap=False):
         cardutil.iso8583.loads(message_bytes)
 
     """
+    if not encoding:
+        encoding = DEFAULT_ENCODING
     if not iso_config:
         iso_config = config['bit_config']
 
     return _iso8583_to_dict(b, iso_config, encoding, hex_bitmap)
 
 
-def _iso8583_to_dict(message, bit_config, encoding='ascii', hex_bitmap=False):
+def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=False):
     """
     Convert ISO8583 style message to dictionary
 
@@ -190,7 +197,7 @@ def _iso8583_to_dict(message, bit_config, encoding='ascii', hex_bitmap=False):
     return return_values
 
 
-def _dict_to_iso8583(message, bit_config, encoding='ascii', hex_bitmap=False):
+def _dict_to_iso8583(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=False):
     """
     Convert dictionary to ISO8583 message
 
@@ -244,7 +251,7 @@ def _dict_to_iso8583(message, bit_config, encoding='ascii', hex_bitmap=False):
     return output_string
 
 
-def _field_to_iso8583(bit_config, field_value, encoding='ascii'):
+def _field_to_iso8583(bit_config, field_value, encoding=DEFAULT_ENCODING):
 
     output = ''
     field_value = _pytype_to_string(field_value, bit_config)
@@ -257,7 +264,7 @@ def _field_to_iso8583(bit_config, field_value, encoding='ascii'):
     return output.encode(encoding)
 
 
-def _iso8583_to_field(bit, bit_config, message_data, encoding='ascii'):
+def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
     """
     Processes a message bit element
 
@@ -279,7 +286,7 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding='ascii'):
         field_length_string = field_length_string.decode(encoding)
         field_length = int(field_length_string)
 
-    field_data = message_data[length_size:length_size + field_length]  # .decode(encoding)
+    field_data = message_data[length_size:length_size + field_length]
     LOGGER.debug(f'field_data={field_data}')
     field_processor = _get_parameter(bit_config, 'field_processor')
 

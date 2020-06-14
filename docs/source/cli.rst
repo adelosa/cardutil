@@ -4,14 +4,17 @@ Command line tools
 
 The following command line tools are installed as part of the package
 
+mastercard ipm tools
+====================
+
 ``mci_ipm_to_csv``
 ------------------
 Converts Mastercard IPM files to csv format
 
-.. code-block:: none
+.. code-block:: text
 
-    usage: mci_ipm_to_csv [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
-                          [--no1014blocking] [--version]
+    usage: mci_ipm_to_csv [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING] [--out-encoding OUT_ENCODING]
+                          [--no1014blocking] [--config-file CONFIG_FILE] [--version]
                           in_filename
 
     Mastercard IPM to CSV
@@ -23,15 +26,19 @@ Converts Mastercard IPM files to csv format
       -h, --help            show this help message and exit
       -o OUT_FILENAME, --out-filename OUT_FILENAME
       --in-encoding IN_ENCODING
+      --out-encoding OUT_ENCODING
       --no1014blocking
+      --config-file CONFIG_FILE
+                            File containing cardutil configuration - JSON format
       --version             show program's version number and exit
+
 
 
 ``mci_ipm_param_encode``
 ------------------------
 Changes the encoding of a Mastercard IPM parameter file
 
-.. code-block:: none
+.. code-block:: text
 
     usage: mci_ipm_param_encode [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
                                 [--out-encoding OUT_ENCODING] [--no1014blocking]
@@ -55,7 +62,7 @@ Changes the encoding of a Mastercard IPM parameter file
 ------------------
 Changes the encoding of a Mastercard IPM file
 
-.. code-block:: none
+.. code-block:: text
 
     usage: mci_ipm_encode [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
                           [--out-encoding OUT_ENCODING] [--no1014blocking]
@@ -81,10 +88,10 @@ Changes the encoding of a Mastercard IPM file
 ------------------
 Creates a Mastercard IPM file from a csv file
 
-.. code-block:: none
+.. code-block:: text
 
-    usage: mci_csv_to_ipm [-h] [-o OUT_FILENAME] [--out-encoding OUT_ENCODING]
-                          [--no1014blocking] [--version]
+    usage: mci_csv_to_ipm [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING] [--out-encoding OUT_ENCODING]
+                          [--no1014blocking] [--config-file CONFIG_FILE] [--version]
                           in_filename
 
     CSV to Mastercard IPM
@@ -95,6 +102,38 @@ Creates a Mastercard IPM file from a csv file
     optional arguments:
       -h, --help            show this help message and exit
       -o OUT_FILENAME, --out-filename OUT_FILENAME
+      --in-encoding IN_ENCODING
       --out-encoding OUT_ENCODING
       --no1014blocking
+      --config-file CONFIG_FILE
+                            File containing cardutil configuration - JSON format
       --version             show program's version number and exit
+
+
+config file
+===========
+Command line tools can allow passing of configuration to customise the tool behavior.
+
+There are 2 ways the custom configuration can be provided:
+
+* set ``--config-file`` to file containing configuration required when running command
+* set **CARDUTIL_CONFIG** environment variable to point to folder containing ``cardutil.json`` file
+
+The format is a JSON object containing the config variable from the package config.py file.
+
+.. code-block:: json
+
+    {
+        "bit_config": {
+            "1": {"field_name": "Bitmap secondary", "field_type": "FIXED", "field_length": 8},
+            "other bits": {},
+            "127": {"field_name": "Network data", "field_type": "LLLVAR", "field_length": 0}
+        },
+        "output_data_elements": [
+            "MTI", "DE2", "DE3", "DE4", "DE12", "DE14", "DE22", "DE23", "DE24", "DE25", "DE26",
+            "DE30", "DE31", "DE33", "DE37", "DE38", "DE40", "DE41", "DE42", "DE48", "DE49",
+            "DE50", "DE63", "DE71", "DE73", "DE93", "DE94", "DE95", "DE100", "PDS0023",
+            "PDS0052", "PDS0122", "PDS0148", "PDS0158", "PDS0165", "DE43_NAME", "DE43_SUBURB",
+            "DE43_POSTCODE", "ICC_DATA"
+        ]
+    }

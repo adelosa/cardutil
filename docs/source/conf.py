@@ -18,7 +18,7 @@ import cardutil
 # -- Project information -----------------------------------------------------
 
 project = 'cardutil'
-copyright = '2019, Anthony Delosa'
+copyright = '2019-2020, Anthony Delosa'
 author = 'Banktek Systems'
 
 # The full version, including alpha/beta/rc tags

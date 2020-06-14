@@ -1,43 +1,53 @@
 import argparse
 from csv import DictReader
 
-from cardutil.cli import add_version
+from cardutil.cli import add_version, get_config
 from cardutil.mciipm import IpmWriter
 
 
 def cli_entry():
-    args = vars(cli_parser().parse_args())
-    if not args['out_filename']:
-        args['out_filename'] = args['in_filename'] + '.ipm'
+    cli_run(**vars(cli_parser().parse_args()))
 
-    with open(args['in_filename'], 'r') as in_csv, open(args['out_filename'], 'wb') as out_ipm:
-        mci_csv_to_ipm(in_csv=in_csv, out_ipm=out_ipm, **args)
+
+def cli_run(**kwargs):
+
+    config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
+
+    if not kwargs.get('out_filename'):
+        kwargs['out_filename'] = kwargs['in_filename'] + '.ipm'
+
+    with open(kwargs['in_filename'], 'r', encoding=kwargs.get('in_encoding')) as in_csv:
+        with open(kwargs['out_filename'], 'wb') as out_ipm:
+            mci_csv_to_ipm(in_csv=in_csv, out_ipm=out_ipm, config=config, **kwargs)
 
 
 def cli_parser():
     parser = argparse.ArgumentParser(prog='mci_csv_to_ipm', description='CSV to Mastercard IPM')
     parser.add_argument('in_filename')
     parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--out-encoding', default='ascii')
+    parser.add_argument('--in-encoding')
+    parser.add_argument('--out-encoding')
     parser.add_argument('--no1014blocking', action='store_true')
+    parser.add_argument('--config-file', help='File containing cardutil configuration - JSON format')
     add_version(parser)
 
     return parser
 
 
-def mci_csv_to_ipm(in_csv, out_ipm, out_encoding='ascii', no1014blocking=False, **_):
+def mci_csv_to_ipm(in_csv, out_ipm, config, out_encoding=None, no1014blocking=False, **_):
     """
     Create a Mastercard IPM file given an input csv file object
 
     :param in_csv: file object containing csv formatted data
     :param out_ipm: file object to receive IPM file
+    :param config: dict containing cardutil config
     :param out_encoding: The IPM file encoding. 'cp500' works for EBCDIC
     :param no1014blocking: set True 1014 blocking not required
     :return: None
     """
     blocked = not no1014blocking
     reader = DictReader(in_csv)
-    writer = IpmWriter(out_ipm, encoding=out_encoding, blocked=blocked)
+    writer = IpmWriter(out_ipm, encoding=out_encoding, blocked=blocked, iso_config=config.get('bit_config'))
     for row in reader:
         writer.write(row)
     writer.close()
