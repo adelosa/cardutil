@@ -38,7 +38,6 @@ pipelines:
   default:
     - step: *test
     - step: *coverage
-    - step: *pypi-test
 
   tags:
     v*:
