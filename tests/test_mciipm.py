@@ -14,13 +14,9 @@ class MciIpmTestCase(unittest.TestCase):
         # create the input ipm file bytes -- test_file
         message_list = [message_ascii_raw for _ in range(15)]
         with io.BytesIO() as in_data:
+            with VbsWriter(in_data, blocked=True) as writer:
+                writer.write_many(message_list)
 
-            # write vbs test file
-            writer = VbsWriter(in_data, blocked=True)
-            for message in message_list:
-                writer.write(message)
-            else:
-                writer.close()
             print_stream(in_data, "VBS in data")
 
             # read vbs test file
@@ -29,14 +25,12 @@ class MciIpmTestCase(unittest.TestCase):
         self.assertEqual(len(results), len(message_list))
 
     def test_real_message_example_ebcdic(self):
+        # write 1014 blocked test file
         message_list = [message_ebcdic_raw for _ in range(15)]
         with io.BytesIO() as in_data:
-            # write 1014 blocked test file
-            writer = VbsWriter(in_data, blocked=True)
-            for message in message_list:
-                writer.write(message)
-            else:
-                writer.close()
+            with VbsWriter(in_data, blocked=True) as writer:
+                writer.write_many(message_list)
+
             print_stream(in_data, "1014 blocked in data")
 
             # read blocked test file
@@ -71,10 +65,8 @@ class MciIpmTestCase(unittest.TestCase):
         records = [record]
 
         with io.BytesIO() as out_data:
-            writer = IpmWriter(out_data)
-            for record in records:
-                writer.write(record)
-            writer.close()
+            with IpmWriter(out_data) as writer:
+                writer.write_many(records)
 
             print_stream(out_data, 'VBS output file')
             reader = IpmReader(out_data, iso_config=bit_config)
@@ -89,10 +81,8 @@ class MciIpmTestCase(unittest.TestCase):
         records = [record for _ in range(5)]
 
         with io.BytesIO() as out_data:
-            writer = IpmWriter(out_data, blocked=True)
-            for record in records:
-                writer.write(record)
-            writer.close()
+            with IpmWriter(out_data, blocked=True) as writer:
+                writer.write_many(records)
 
             print_stream(out_data, 'VBS output file')
 

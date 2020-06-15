@@ -33,7 +33,7 @@ A file consists of records. Each record is prefixed with a 4 byte binary length.
 
 Say you had a file with the following 2 records:
 
-.. code-block:: none
+.. code-block:: text
 
     "This is first record 1234567"  <- length 28
     "This is second record AAAABBBBB123"  <- length 34
@@ -88,6 +88,7 @@ In this case, there is only one increment
 import io
 import logging
 import struct
+import typing
 
 from cardutil import iso8583
 
@@ -105,7 +106,7 @@ class Block1014(object):
         self.file_obj = file_obj
         self.remaining_chars = 1012
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str):
         """
         Attribute proxy for wrapped file object
         """
@@ -116,7 +117,7 @@ class Block1014(object):
                 return getattr(self.file_obj, name)
         return None
 
-    def write(self, bytes_to_write):
+    def write(self, bytes_to_write: bytes) -> None:
         """
         Write requested bytes to the output file object.
         """
@@ -148,7 +149,7 @@ class Block1014(object):
         self.remaining_chars = 1012-len(bytes_to_write)
         LOGGER.debug(f'remaining_chars={self.remaining_chars}')
 
-    def seek(self, pos):
+    def seek(self, pos: int) -> None:
         """
         Finalise then seek file object to requested position
 
@@ -157,14 +158,14 @@ class Block1014(object):
         self.finalise()
         self.file_obj.seek(pos)
 
-    def close(self):
+    def close(self) -> None:
         """
         Finalise then close the file object
         """
         self.finalise()
         self.file_obj.close()
 
-    def finalise(self):
+    def finalise(self) -> None:
         """
         Complete the blocking operation by creating final 1014 block.
         Called by ``close`` and ``seek`` methods to ensure completion.
@@ -178,11 +179,11 @@ class Unblock1014(object):
     Unblocks 1014 blocked file objects.
     Wrap around a 1014 blocked file object. Return file like object providing only unblocked data
     """
-    def __init__(self, file_obj):
+    def __init__(self, file_obj: typing.BinaryIO):
         self.file_obj = file_obj
         self.buffer = b''
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> any:
         """
         Attribute proxy for wrapped file object
         """
@@ -193,7 +194,7 @@ class Unblock1014(object):
                 return getattr(self.file_obj, name)
         return None
 
-    def read(self, bytes_to_read=0):
+    def read(self, bytes_to_read: int = 0):
         """
         Read requested bytes from the file object. Returned data will be unblocked
         """
@@ -222,7 +223,7 @@ class VbsReader(object):
                 print(vbs_record)
 
     """
-    def __init__(self, vbs_file, blocked=False):
+    def __init__(self, vbs_file: typing.BinaryIO, blocked: bool = False):
         """
         Create a VbsReader object
 
@@ -232,7 +233,7 @@ class VbsReader(object):
         if blocked:
             self.vbs_data = Unblock1014(vbs_file)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name) -> any:
         """
         Attribute proxy for wrapped file object
         """
@@ -246,7 +247,7 @@ class VbsReader(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> bytes:
         """
         Unpacks a variable blocked object into records
         """
@@ -287,7 +288,8 @@ class IpmReader(VbsReader):
                 print(record)
 
     """
-    def __init__(self, ipm_file, encoding=None, iso_config=None, **kwargs):
+    def __init__(self, ipm_file: typing.BinaryIO,
+                 encoding: str = None, iso_config: dict = None, **kwargs):
         """
         Create a new IpmReader
 
@@ -299,7 +301,7 @@ class IpmReader(VbsReader):
         self.iso_config = iso_config
         super(IpmReader, self).__init__(ipm_file, **kwargs)
 
-    def __next__(self):
+    def __next__(self) -> dict:
         vbs_record = super(IpmReader, self).__next__()
         LOGGER.debug(f'{len(vbs_record)}: {vbs_record}')
         return iso8583.loads(vbs_record, encoding=self.encoding, iso_config=self.iso_config)
@@ -316,17 +318,23 @@ class VbsWriter(object):
         ...     writer.write(b'This is the record')
         ...     writer.close()
 
-    The message is a byte string containing the data.
-
     The `close` method must be issued to finalise the file by adding the zero length record which
     indicated the end of the file.
+    The message is a byte string containing the data.
+
+    Alternatively, you can use as a context manager which will take care of the writer closure.
+
+        >>> with io.BytesIO() as vbs_out:
+        ...     with VbsWriter(vbs_out, blocked=True) as writer:
+        ...         writer.write(b'This is the record')
+
     """
-    def __init__(self, out_file, blocked=False):
+    def __init__(self, out_file: typing.BinaryIO, blocked: bool = False):
         self.out_file = out_file
         if blocked:
             self.out_file = Block1014(out_file)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name) -> any:
         """
         Attribute proxy for wrapped file object
         """
@@ -337,7 +345,7 @@ class VbsWriter(object):
                 return getattr(self.out_file, name)
         return None
 
-    def write(self, record):
+    def write(self, record: bytes) -> None:
         """
         Add a new record to the VBS output file
 
@@ -353,7 +361,17 @@ class VbsWriter(object):
         # add data to output
         self.out_file.write(record)
 
-    def close(self):
+    def write_many(self, iterable: typing.Iterable[bytes]) -> None:
+        """
+        Convenience method to write multiple records from an iterable
+
+        :param iterable: iterable providing records as bytes
+        :return: None
+        """
+        for record in iterable:
+            self.write(record)
+
+    def close(self) -> None:
         """
         Finalise the VBS file output by adding the zero length file record.
 
@@ -362,6 +380,12 @@ class VbsWriter(object):
         # add zero length to end of record
         self.out_file.write(struct.pack(">i", 0))
         self.out_file.seek(0)
+
+    def __enter__(self, *args, **kwargs):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        self.close()
 
 
 class IpmWriter(VbsWriter):
@@ -376,7 +400,6 @@ class IpmWriter(VbsWriter):
         ...    writer.close()
 
     If the required file is 1014 block format, then set the ``blocked`` parameter to True.
-
     ::
 
         >>> with io.BytesIO() as ipm_out:
@@ -386,7 +409,6 @@ class IpmWriter(VbsWriter):
 
     You can provide the specific file encoding if required.
     All standard python encoding schemes are supported. Mainframe systems likely use ``cp500``
-
     ::
 
        >>> with io.BytesIO() as ipm_out:
@@ -394,8 +416,15 @@ class IpmWriter(VbsWriter):
        ...     writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
        ...     writer.close()
 
+    Alternatively use as a context manager to ensure closure at end of processing
+    ::
+
+       >>> with io.BytesIO() as ipm_out:
+       ...     with IpmWriter(ipm_out, encoding='cp500') as writer:
+       ...         writer.write({'MTI': '1111', 'DE2': '9999111122221111'})
+
     """
-    def __init__(self, file_obj, encoding=None, iso_config=None, **kwargs):
+    def __init__(self, file_obj: typing.BinaryIO, encoding: str = None, iso_config: dict = None, **kwargs):
         """
         Create a new IpmWriter
 
@@ -406,7 +435,7 @@ class IpmWriter(VbsWriter):
         self.iso_config = iso_config
         super(IpmWriter, self).__init__(file_obj, **kwargs)
 
-    def write(self, obj):
+    def write(self, obj: dict) -> None:
         """
         Writes new record to IPM file
 
@@ -419,8 +448,18 @@ class IpmWriter(VbsWriter):
         record = iso8583.dumps(obj, encoding=self.encoding, iso_config=self.iso_config)
         super(IpmWriter, self).write(record)
 
+    def write_many(self, iterable: typing.Iterable[dict]) -> None:
+        """
+        Convenience method to write multiple records from an iterable
 
-def unblock_1014(input_data, output_data):
+        :param iterable: iterable providing records as dict
+        :return: None
+        """
+        for record in iterable:
+            self.write(record)
+
+
+def unblock_1014(input_data: typing.BinaryIO, output_data: typing.BinaryIO):
     """
     Unblocks a 1014 byte blocked file object
 
@@ -441,7 +480,7 @@ def unblock_1014(input_data, output_data):
     input_data.seek(0)
 
 
-def block_1014(input_data, output_data):
+def block_1014(input_data: typing.BinaryIO, output_data: typing.BinaryIO):
     """
     Creates a 1014 byte blocked file object
 
@@ -463,7 +502,7 @@ def block_1014(input_data, output_data):
     input_data.seek(0)
 
 
-def vbs_list_to_bytes(byte_list: list, blocked: bool = False) -> bytes:
+def vbs_list_to_bytes(byte_list: iter, blocked: bool = False) -> bytes:
     """
     Convenience function for creating VBS byte strings (optionally blocked) from list of byte strings
     """
