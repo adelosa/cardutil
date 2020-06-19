@@ -126,7 +126,7 @@ class Iso8583TestCase(unittest.TestCase):
             b'140102151610', _field_to_iso8583(
                 {'field_type': 'FIXED', 'field_python_type': 'datetime',
                  'field_length': 12, "field_date_format": "%y%m%d%H%M%S"},
-                 datetime.datetime(2014, 1, 2, 15, 16, 10)))
+                datetime.datetime(2014, 1, 2, 15, 16, 10)))
 
     def test_iso8583_to_dict(self):
         expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': 9999,
@@ -250,6 +250,8 @@ class Iso8583TestCase(unittest.TestCase):
             import dateutil
         except ImportError:
             self.skipTest('requires that python-dateutil is installed')
+            return
+        print(dateutil)
         self.get_date_from_string()
 
     def get_date_from_string(self):
