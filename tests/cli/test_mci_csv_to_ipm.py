@@ -15,7 +15,7 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         create an ipm file from csv, then create csv from ipm. Check that input csv == output csv
         """
         def do_test(no_blocking):
-            csv_data = 'MTI,DE2,DE4\n0100,1111222233334444,100'
+            csv_data = 'MTI,DE2,DE4,DE12\n0100,1111222233334444,100,2020-06-18'
             in_csv = io.StringIO(csv_data)
             print_stream(in_csv, 'in_csv')
             in_csv.seek(0)
@@ -37,6 +37,7 @@ class MciCsvToIpmTestCase(unittest.TestCase):
             self.assertEqual(record['MTI'], '0100')
             self.assertEqual(record['DE2'], '1111222233334444')
             self.assertEqual(record['DE4'], '100')
+            self.assertEqual(record['DE12'], '2020-06-18 00:00:00')
         do_test(no_blocking=False)
         do_test(no_blocking=True)
 

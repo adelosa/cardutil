@@ -11,9 +11,13 @@ mastercard ipm tools
 ------------------
 Converts Mastercard IPM files to csv format
 
+.. note::
+   Fields defined as datetime in the ISO8583 config will be rendered in the CSV as ISO 8601 calendar date format.
+
 .. code-block:: text
 
-    usage: mci_ipm_to_csv [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING] [--out-encoding OUT_ENCODING]
+    usage: mci_ipm_to_csv [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
+                          [--out-encoding OUT_ENCODING]
                           [--no1014blocking] [--config-file CONFIG_FILE] [--version]
                           in_filename
 
@@ -88,9 +92,26 @@ Changes the encoding of a Mastercard IPM file
 ------------------
 Creates a Mastercard IPM file from a csv file
 
+.. note::
+   **Parsing of string dates**
+
+   Parsing of dates contained in the input CSV file will be different based on:
+
+   * if you have the `python-dateutil library <https://dateutil.readthedocs.io/en/stable/>`_ installed -- it will use its date parser
+   * if you are using python 3.7 or above - will use `datetime.fromisodate <https://docs.python.org/3/library/datetime.html#datetime.date.fromisoformat>`_ function
+   * Otherwise, it will use a simple parser that will attempt 3 patterns::
+
+      ccyy-mm-dd hh:mm:ss
+      ccyy-mm-dd hh:mm
+      ccyy-mm-dd
+
+    It is recommended that if you require more than basic ISO 8601 calendar date parsing, that you install the python-dateutil module.
+
+
 .. code-block:: text
 
-    usage: mci_csv_to_ipm [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING] [--out-encoding OUT_ENCODING]
+    usage: mci_csv_to_ipm [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
+                          [--out-encoding OUT_ENCODING]
                           [--no1014blocking] [--config-file CONFIG_FILE] [--version]
                           in_filename
 
@@ -120,6 +141,7 @@ There are 2 ways the custom configuration can be provided:
 * set **CARDUTIL_CONFIG** environment variable to point to folder containing ``cardutil.json`` file
 
 The format is a JSON object containing the config variable from the package config.py file.
+See :py:mod:`cardutil.config`
 
 .. code-block:: json
 

@@ -33,7 +33,7 @@ def filter_data_list(data_list, field_list):
     :param field_list: the list of string keys to return
     :return: filtered data list
     """
-    return [filter_dictionary(item, field_list) for item in data_list]
+    return (filter_dictionary(item, field_list) for item in data_list)
 
 
 def filter_dictionary(dictionary, field_list):

@@ -67,11 +67,12 @@ import decimal
 import logging
 import re
 import struct
+import sys
 
 from cardutil.BitArray import BitArray
 from cardutil.card import mask
 from cardutil.config import config
-from cardutil.hexdump import hexdump
+from cardutil.vendor.hexdump import hexdump
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_ENCODING = 'latin_1'
@@ -288,7 +289,7 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
 
     field_data = message_data[length_size:length_size + field_length]
     LOGGER.debug(f'field_data={field_data}')
-    field_processor = _get_parameter(bit_config, 'field_processor')
+    field_processor = bit_config.get('field_processor')
 
     # do ascii conversion except for ICC field
     if field_processor != 'ICC':
@@ -325,17 +326,6 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
     return return_values, field_length + length_size
 
 
-def _get_parameter(config, parameter):
-    """
-    Checks for parameter value and sets if present
-
-    :param config: bit configuration list
-    :param parameter: the configuration item to set
-    :return: string with value of parameter
-    """
-    return config[parameter] if config.get(parameter) else ""
-
-
 def _pan_prefix(field_data):
     """
     Get prefix of PAN
@@ -351,15 +341,15 @@ def _string_to_pytype(field_data, bit_config):
     :param bit_config: Configuration for bit
     :return: data in required type
     """
-    field_python_type = _get_parameter(bit_config, 'field_python_type')
+    field_python_type = bit_config.get('field_python_type')
+    field_date_format = bit_config.get('field_date_format', "%y%m%d")
 
     if field_python_type in ("int", "long"):
         field_data = int(field_data)
     if field_python_type == "decimal":
         field_data = decimal.Decimal(field_data)
     if field_python_type == "datetime":
-        field_data = datetime.datetime.strptime(
-            field_data, "%y%m%d%H%M%S")
+        field_data = datetime.datetime.strptime(field_data, field_date_format)
     return field_data
 
 
@@ -371,15 +361,53 @@ def _pytype_to_string(field_data, bit_config):
     :param bit_config: Configuration for bit
     :return: data in required type
     """
-    field_python_type = _get_parameter(bit_config, 'field_python_type')
+    field_python_type = bit_config.get('field_python_type')
+    field_date_format = bit_config.get('field_date_format', "%y%m%d")
+
     return_string = field_data
     if field_python_type in ('int', 'long'):
-        return_string = format(int(field_data), '0' + str(_get_parameter(bit_config, 'field_length')) + 'd')
+        return_string = format(int(field_data), '0' + str(bit_config.get('field_length', 0)) + 'd')
     if field_python_type == "decimal":
-        return_string = format(decimal.Decimal(field_data), '0' + str(_get_parameter(bit_config, 'field_length')) + 'f')
+        return_string = format(decimal.Decimal(field_data), '0' + str(bit_config.get('field_length', 0)) + 'f')
     if field_python_type == "datetime":
-        return_string = format(field_data, "%y%m%d%H%M%S")
+        if not isinstance(field_data, datetime.datetime):
+            field_data = _get_date_from_string(field_data)
+        return_string = format(field_data, field_date_format)
     return return_string
+
+
+def _get_date_from_string(field_data: str) -> datetime:
+    """
+    Parse string dates to python datetime object
+
+    Use dateutils library if it is installed, otherwise revert to simple parser
+    :param field_data: string containing date
+    :return: datetime object
+    """
+    try:
+        import dateutil.parser as parser
+        print('Using dateutil parser')
+        return parser.parse(field_data)
+    except ImportError:
+        pass
+
+    if sys.version_info >= (3, 7):
+        print('Using fromisoformat')
+        return datetime.datetime.fromisoformat(field_data)
+
+    # fallback parser -- tries a few different formats until one works
+    print('Using built in date parser')
+    date_formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
+    output_date = None
+    for date_format in date_formats:
+        try:
+            output_date = datetime.datetime.strptime(field_data, date_format)
+            break
+        except ValueError:
+            continue
+    if not output_date:
+        raise ValueError("Unrecognised date string format - {}".format(field_data))
+    return output_date
 
 
 def _get_field_length(bit_config):

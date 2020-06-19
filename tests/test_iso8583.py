@@ -6,7 +6,7 @@ import unittest
 from cardutil.config import config
 from cardutil.iso8583 import (
     BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
-    _pds_to_de, _pds_to_dict, _pytype_to_string, _icc_to_dict, _get_de43_fields)
+    _pds_to_de, _pds_to_dict, _pytype_to_string, _icc_to_dict, _get_de43_fields, _get_date_from_string)
 
 from tests import message_ebcdic_raw, message_ascii_raw, message_ascii_raw_hex, message_ebcdic_raw_hex
 
@@ -124,8 +124,9 @@ class Iso8583TestCase(unittest.TestCase):
                 decimal.Decimal("123.432")))
         self.assertEqual(
             b'140102151610', _field_to_iso8583(
-                {'field_type': 'FIXED', 'field_python_type': 'datetime', 'field_length': 12},
-                datetime.datetime(2014, 1, 2, 15, 16, 10)))
+                {'field_type': 'FIXED', 'field_python_type': 'datetime',
+                 'field_length': 12, "field_date_format": "%y%m%d%H%M%S"},
+                 datetime.datetime(2014, 1, 2, 15, 16, 10)))
 
     def test_iso8583_to_dict(self):
         expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': 9999,
@@ -180,8 +181,8 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual('00001', _pytype_to_string('1', {'field_python_type': 'int', 'field_length': 5}))
         self.assertEqual('00001', _pytype_to_string('1', {'field_python_type': 'long', 'field_length': 5}))
         self.assertEqual(
-            '180101171500',
-            _pytype_to_string(datetime.datetime(2018, 1, 1, 17, 15), {'field_python_type': 'datetime'}))
+            '180101171500', _pytype_to_string(datetime.datetime(2018, 1, 1, 17, 15), {
+                'field_python_type': 'datetime', 'field_date_format': '%y%m%d%H%M%S'}))
 
     def test_icc_to_dict(self):
         self.assertEqual(
@@ -202,6 +203,59 @@ class Iso8583TestCase(unittest.TestCase):
 
     def test_get_de43_fields(self):
         self.assertEqual(_get_de43_fields('THIS DOES NOT MATCH REGEX'), {})
+
+    def test_get_date_from_string_use_fromisodate(self):
+        import builtins
+        import sys
+
+        # skip test if being run on py36 or less
+        if sys.version_info < (3, 7):
+            self.skipTest('Needs py37 or greater to run')
+
+        real_import = builtins.__import__
+
+        def mock_import(name, *vars):
+            if name == 'dateutil.parser':
+                raise ImportError
+            else:
+                return real_import(name, *vars)
+
+        builtins.__import__ = mock_import
+        self.get_date_from_string()
+        builtins.__import__ = real_import
+
+    def test_get_date_from_string_use_builtin(self):
+        import sys
+        import builtins
+
+        real_version = sys.version_info
+        sys.version_info = (3, 6)
+        real_import = builtins.__import__
+
+        def mock_import(name, *vars):
+            if name == 'dateutil.parser':
+                raise ImportError
+            else:
+                return real_import(name, *vars)
+
+        builtins.__import__ = mock_import
+        self.get_date_from_string()
+        with self.assertRaises(ValueError):
+            _get_date_from_string("11221-11-22")
+        builtins.__import__ = real_import
+        sys.version_info = real_version
+
+    def test_get_date_from_string_use_dateutil(self):
+        try:
+            import dateutil
+        except ImportError:
+            self.skipTest('requires that python-dateutil is installed')
+        self.get_date_from_string()
+
+    def get_date_from_string(self):
+        self.assertEqual(_get_date_from_string("2002-01-01"), datetime.datetime(2002, 1, 1))
+        self.assertEqual(_get_date_from_string("2002-01-01 10:01"), datetime.datetime(2002, 1, 1, 10, 1))
+        self.assertEqual(_get_date_from_string("2002-01-01 10:01:02"), datetime.datetime(2002, 1, 1, 10, 1, 2))
 
 
 if __name__ == '__main__':

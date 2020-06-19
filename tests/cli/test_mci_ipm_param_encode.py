@@ -5,7 +5,7 @@ import unittest
 
 from cardutil.cli import mci_ipm_param_encode
 from cardutil.mciipm import VbsWriter
-from cardutil.hexdump import hexdump
+from cardutil.vendor.hexdump import hexdump
 from tests import print_stream
 
 

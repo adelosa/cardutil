@@ -25,7 +25,7 @@ The config is in the form of a python dictionary structured as follows::
             "field_length": 0
             "field_processor": "PAN",
             "field_python_type": "string"
-            }
+            "field_date_format": "%y%m%d"}
     }
 
 The config dictionary contains a string key for each valid bit in the bitmap.
@@ -33,29 +33,36 @@ For example, the config for bit 1 with have the key "1".
 
 The value for the bit is a dictionary containing the following values:
 
-* ``field_name`` : description of the bit field
-* ``field_type``: defines the ISO8583 field type
-   * ``FIXED`` : field with fixed length
-   * ``LLVAR`` : field with variable length - 2 character length value
-   * ``LLLVAR`` : field with variable length - 2 character length value
-* ``field_length``: length of the field. Use zero for variable length fields.
-* ``field_processor`` (optional): a process to apply to a field.
-   * ``PAN``: For use with PAN fields. Mask PAN using first 6, last 4 pattern
-   * ``PAN-PREFIX``: For use with PAN fields. Only get first 9 PAN numbers -- prefix
-   * ``ICC``: Mastercard ICC field. Adds TAGxxxx keys to output
-   * ``PDS``: Mastercard PDS field. Processes PDSxxxx fields
-   * ``DE43``: Mastercard Merchant details field. Adds the following subfields to output
-      * DE43_NAME,
-      * DE43_ADDRESS
-      * DE43_SUBURB
-      * DE43_POSTCODE
-      * DE43_STATE
-      * DE43_COUNTRY fields
-* ``field_python_type`` (optional) : when processing between iso and python, determines the python object type.
-    * ``string``: default if no type provided
-    * ``int``
-    * ``decimal``: use if your field has decimal place
-    * ``datetime``: Uses the follow python date pattern ``"%y%m%d%H%M%S"``
+field_name
+    description of the bit field
+field_type
+    defines the ISO8583 field type
+        * FIXED : field with fixed length
+        * LLVAR : field with variable length - 2 character length value
+        * LLLVAR : field with variable length - 2 character length value
+field_length
+    length of the field. Use zero for variable length fields.
+field_processor
+    (optional) a process to apply to a field.
+        * ``PAN``: For use with PAN fields. Mask PAN using first 6, last 4 pattern
+        * ``PAN-PREFIX``: For use with PAN fields. Only get first 9 PAN numbers -- prefix
+        * ``ICC``: Mastercard ICC field. Adds TAGxxxx keys to output
+        * ``PDS``: Mastercard PDS field. Processes PDSxxxx fields
+        * ``DE43``: Mastercard Merchant details field. Adds DE43 sub fields DE43_*
+field_python_type
+    (optional) When processing between iso and python, determines the python object type.
+        * ``string``: default if no type provided
+        * ``int``
+        * ``decimal``: use if your field has decimal place
+        * ``datetime``: use if your field is a date
+field_date_format
+     (optional) If your field python type is datetime, then you use this to specify
+     the format of the date in the iso record.
+
+     Use standard python datetime.strptime see `strftime() and strptime() Behaviour
+     <https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior>`_.
+
+     Default format is "%y%m%d"
 """
 
 config = {
@@ -74,7 +81,7 @@ config = {
         "10": {"field_name": "Conversion rate, Cardholder billing", "field_type": "FIXED", "field_length": 8,
                "field_python_type": "long"},
         "12": {"field_name": "Date/Time local transaction", "field_type": "FIXED", "field_length": 12,
-               "field_python_type": "datetime"},
+               "field_python_type": "datetime", "field_date_format": "%y%m%d%H%M%S"},
         "14": {"field_name": "Expiration date", "field_type": "FIXED", "field_length": 4},
         "22": {"field_name": "Point of service data code", "field_type": "FIXED", "field_length": 12},
         "23": {"field_name": "Card sequence number", "field_type": "FIXED", "field_length": 3},

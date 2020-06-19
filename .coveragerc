@@ -2,7 +2,7 @@
 [run]
 branch = True
 source = cardutil
-omit = cardutil/hexdump.py
+omit = */vendor/*
 
 [report]
 # Regexes for lines to exclude from consideration
