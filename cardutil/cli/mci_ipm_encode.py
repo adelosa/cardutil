@@ -41,9 +41,10 @@ def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='la
     """
     blocked = not no1014blocking
 
-    reader = IpmReader(in_file, encoding=in_encoding, blocked=blocked)
-    writer = IpmWriter(out_file, encoding=out_encoding, blocked=blocked)
+    with IpmWriter(out_file, encoding=out_encoding, blocked=blocked) as writer:
+        reader = IpmReader(in_file, encoding=in_encoding, blocked=blocked)
+        writer.write_many(reader)
 
-    for record in reader:
-        writer.write(record)
-    writer.close()  # finalises the file by adding zero length record
+
+if __name__ == '__main__':
+    cli_entry()

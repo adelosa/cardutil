@@ -46,8 +46,10 @@ def mci_csv_to_ipm(in_csv, out_ipm, config, out_encoding=None, no1014blocking=Fa
     :return: None
     """
     blocked = not no1014blocking
-    reader = DictReader(in_csv)
-    writer = IpmWriter(out_ipm, encoding=out_encoding, blocked=blocked, iso_config=config.get('bit_config'))
-    for row in reader:
-        writer.write(row)
-    writer.close()
+    with IpmWriter(out_ipm, encoding=out_encoding, blocked=blocked, iso_config=config.get('bit_config')) as writer:
+        reader = DictReader(in_csv)
+        writer.write_many(reader)
+
+
+if __name__ == '__main__':
+    cli_entry()

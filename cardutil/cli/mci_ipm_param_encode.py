@@ -50,7 +50,9 @@ def mci_ipm_param_encode(in_file, out_file, in_encoding=None, out_encoding=None,
     in_records = (record.decode(in_encoding) for record in vbs_reader)
     out_records = (record.encode(out_encoding) for record in in_records)
 
-    vbs_writer = VbsWriter(out_file, blocked=blocked)
-    for record in out_records:
-        vbs_writer.write(record)
-    vbs_writer.close()
+    with VbsWriter(out_file, blocked=blocked) as vbs_writer:
+        vbs_writer.write_many(out_records)
+
+
+if __name__ == '__main__':
+    cli_entry()

@@ -41,9 +41,7 @@ def mci_ipm_param_to_csv(in_param, out_csv, table_id, config=None, in_encoding=N
     vbs_in = mciipm.IpmParamReader(in_param, table_id, param_config=config, blocked=blocked, encoding=in_encoding)
     csv_writer = csv.DictWriter(out_csv, fieldnames=config[table_id].keys(), extrasaction="ignore", lineterminator="\n")
     csv_writer.writeheader()
-    for record_dict in vbs_in:
-        print(f'record_dict={record_dict}')
-        csv_writer.writerow(record_dict)
+    csv_writer.writerows(vbs_in)
 
 
 if __name__ == '__main__':
