@@ -21,6 +21,13 @@ class Iso8583TestCase(unittest.TestCase):
         out_data = dumps({'MTI': '1234', 'DE2': '123'}, iso_config=config["bit_config"])
         self.assertEqual(b'1234\xc0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x0003123', out_data)
 
+    def test_dumps_with_no_values(self):
+        # check that empty fields are not added as elements to ISO output
+        in_data_empty = {'MTI': '1234', 'DE2': '', 'DE3': None, 'DE4': 0}
+        out_data_empty = loads(dumps(in_data_empty))
+        print(out_data_empty)
+        self.assertEqual({'MTI': '1234', 'DE4': 0}, out_data_empty)
+
     def test_dumps_hex_bitmap(self):
         out_data = dumps({'MTI': '1234', 'DE2': '123'}, hex_bitmap=True)
         self.assertEqual(b'1234c000000000000000000000000000000003123', out_data)

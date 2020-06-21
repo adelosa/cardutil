@@ -230,7 +230,7 @@ def _dict_to_iso8583(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
         message[f'DE{de_field_key}'] = de_field_value
 
     for bit in range(2, 128):
-        if message.get('DE' + str(bit)):
+        if message.get('DE' + str(bit)) or message.get('DE' + str(bit)) == 0:  # 0 evals to false, allow zero values
             LOGGER.debug(f'processing bit {bit}')
             bitmap_values[bit - 1] = True
             LOGGER.debug(message.get('DE' + str(bit)))

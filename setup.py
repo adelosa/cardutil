@@ -19,6 +19,7 @@ setup(name='cardutil',
               'mci_csv_to_ipm = cardutil.cli.mci_csv_to_ipm:cli_entry',
               'mci_ipm_encode = cardutil.cli.mci_ipm_encode:cli_entry',
               'mci_ipm_param_encode = cardutil.cli.mci_ipm_param_encode:cli_entry',
+              'mci_ipm_param_to_csv = cardutil.cli.mci_ipm_param_to_csv:cli_entry',
           ]
       },
       extras_require={

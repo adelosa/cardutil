@@ -56,6 +56,7 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         mci_csv_to_ipm.cli_run(in_filename=in_csv_name, out_encoding='ascii')
         mci_csv_to_ipm.cli_run(in_filename=in_csv_name, out_filename=in_csv_name + '.bin', out_encoding='latin_1')
         os.remove(in_csv_name)
+        os.remove(in_csv_name + '.ipm')
         os.remove(in_csv_name + '.bin')
 
     def test_mci_ipm_encode_cli_parser(self):

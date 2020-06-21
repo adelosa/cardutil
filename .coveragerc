@@ -23,6 +23,9 @@ exclude_lines =
     if 0:
     if __name__ == .__main__.:
 
+    # ignore argparse line capture
+    .parse_args()
+
 ignore_errors = True
 
 [html]

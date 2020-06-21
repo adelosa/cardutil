@@ -1,8 +1,11 @@
 """
 Mastercard |reg| IPM clearing file readers and writers
 
-* block and unblock 1014 blocked IPM and parameter files
-* process VBS format records
+* VBS file readers and writers
+* IPM file readers and writers
+* IPM parameter extract reader
+* Support for 1014 blocked format
+
 
 Read an IPM file::
 
@@ -90,7 +93,7 @@ import logging
 import struct
 import typing
 
-from cardutil import iso8583
+from cardutil import iso8583, config
 
 LOGGER = logging.getLogger(__name__)
 
@@ -252,6 +255,13 @@ class VbsReader(object):
         Unpacks a variable blocked object into records
         """
         record_length_raw = self.vbs_data.read(4)
+        if len(record_length_raw) != 4:
+            # this can happen if the VBS does not have a zero length record at end.
+            # You can recreate using VbsWriter and not calling close method.
+            # The reader will just accept we are at end if this happens.
+            LOGGER.error(f'requested 4 bytes, got {len(record_length_raw)} -- exiting')
+            raise StopIteration
+
         record_length = struct.unpack(">i", record_length_raw)[0]
         LOGGER.debug("record_length=%s", record_length)
 
@@ -305,6 +315,92 @@ class IpmReader(VbsReader):
         vbs_record = super(IpmReader, self).__next__()
         LOGGER.debug(f'{len(vbs_record)}: {vbs_record}')
         return iso8583.loads(vbs_record, encoding=self.encoding, iso_config=self.iso_config)
+
+
+class IpmParamReader(VbsReader):
+    """
+    IPM Param reader can be used to iterate through an IPM parameter extract file.
+    The record is returned as a dictionary containing the parameter keys.
+
+    ::
+
+        from cardutil.mciipm import IpmParamReader
+        with open('param.bin', 'rb') as param_in:
+            reader = IpmParamReader(param_in, table_id='IP0040T1')
+            for record in reader:
+                print(record)
+
+    If the parameter file is 1014 block format, then set the ``blocked`` parameter to True.
+
+    ::
+
+        from cardutil.mciipm import IpmParamReader
+        with open('blocked_param.bin', 'rb') as param_in:
+            reader = IpmParamReader(param_in, table_id='IP0040T1', blocked=True)
+            for record in reader:
+                print(record)
+
+    """
+    # layout for IP0000T1
+    _IP0000T1_KEY = slice(11, 19)
+    _IP0000T1_TABLE_ID = slice(19, 27)
+    _IP0000T1_TABLE_SUB_ID = slice(243, 246)
+
+    # table type for all except IP0000T1 - get this 3 letter code from self.table_keys
+    _TABLE_SUB_ID = slice(8, 11)
+
+    def __init__(self, param_file: typing.BinaryIO, table_id: str, encoding: str = None, param_config: dict = None,
+                 **kwargs):
+        """
+        Create a new IpmParamReader
+
+        :param param_file: the file object to read
+        :param table_id: the IPM parameter table to read
+        :param encoding: the parameter file encoding
+        :param param_config: config dict with key bit_config
+        """
+        self.encoding = encoding if encoding else 'latin_1'
+        self.param_config = param_config if param_config else config.config.get('mci_parameter_tables')
+        self.table_id = table_id
+        self.table_index = dict()
+        super(IpmParamReader, self).__init__(param_file, **kwargs)
+
+        # check if config available for table id
+        if not self.param_config.get(table_id):
+            raise ValueError(f'Parameter config not available for table {table_id}')
+
+        # load the table index
+        trailer_record_found = False
+        while True:
+            try:
+                vbs_record = super(IpmParamReader, self).__next__()
+            except StopIteration:
+                break
+            record = vbs_record.decode(self.encoding)
+            if record[self._IP0000T1_KEY] == 'IP0000T1':
+                self.table_index[record[self._IP0000T1_TABLE_SUB_ID]] = record[self._IP0000T1_TABLE_ID]
+            if record.startswith('TRAILER RECORD IP0000T1'):
+                trailer_record_found = True
+                break
+        print(self.table_index)
+        if not trailer_record_found:
+            raise ValueError('parameter file missing IP0000T1 trailer record')
+
+    def __next__(self) -> dict:
+        while True:
+            record = super(IpmParamReader, self).__next__()
+            record_table_id = self.table_index.get(record[self._TABLE_SUB_ID].decode(self.encoding))
+            if record_table_id == self.table_id:
+                record_dict = dict()
+                for field in self.param_config[record_table_id]:
+                    record_dict[field] = self._get_param_field(record, field)
+                return record_dict
+
+    def _get_param_field(self, record, field):
+        table_id = self.table_index.get(record[self._TABLE_SUB_ID].decode(self.encoding))
+        return record[
+               self.param_config[
+                   table_id][field]["start"]:self.param_config[table_id][field]["end"]].decode(self.encoding)
 
 
 class VbsWriter(object):
@@ -502,24 +598,32 @@ def block_1014(input_data: typing.BinaryIO, output_data: typing.BinaryIO):
     input_data.seek(0)
 
 
-def vbs_list_to_bytes(byte_list: iter, blocked: bool = False) -> bytes:
+def vbs_list_to_bytes(byte_list: iter, **kwargs) -> bytes:
     """
     Convenience function for creating VBS byte strings (optionally blocked) from list of byte strings
+
+    :param byte_list: a list containing byte string records
+    :param kwargs: any options to be passed to VbsWriter constructor. See :py:mod:`cardutil.mciipm.VbsWriter`
+    :return: single byte string containing VBS data.
     """
     file_out = io.BytesIO()
-    vbs_out = VbsWriter(file_out, blocked=blocked)
+    vbs_out = VbsWriter(file_out, **kwargs)
     for rec in byte_list:
         vbs_out.write(rec)
     vbs_out.close()
     return file_out.read()
 
 
-def vbs_bytes_to_list(vbs_bytes: bytes, blocked: bool = False) -> list:
+def vbs_bytes_to_list(vbs_bytes: bytes, **kwargs) -> list:
     """
     Convenience function for unpacking VBS byte strings to byte string list
+
+    :param vbs_bytes: single byte string containing VBS data
+    :param kwargs: any options to be passed to VbsReader constructor. See :py:mod:`cardutil.mciipm.VbsReader`
+    :return: a list containing byte string records
     """
     file_in = io.BytesIO(vbs_bytes)
-    return [record for record in VbsReader(file_in, blocked=blocked)]
+    return [record for record in VbsReader(file_in, **kwargs)]
 
 
 if __name__ == '__main__':

@@ -1,8 +1,10 @@
 """
-The config module contains the default configuration for the cardutil library
+The config module contains the default configuration for the cardutil library.
 
-ISO8583 message configuration
-=============================
+The config consists of a single dictionary called `config` with a number of keys for different configuration data.
+
+bit_config
+==========
 
 The iso8583 module functions require configuration that details how to process the bitmap in a message.
 
@@ -12,9 +14,11 @@ with the different card schemes. The library supports provision of custom ISO858
 If a configuration is not provided, the variable ``config['bit_config']`` in ``config.py`` provides a Mastercard
 specific ISO8583 configuration.
 
-The config is in the form of a python dictionary structured as follows::
+The config is in the form of a python dictionary structured as follows
 
-    bit_config = {
+.. code-block:: json
+
+    {
         "1": {
             "field_name": "Bitmap secondary",
             "field_type": "FIXED",
@@ -22,9 +26,9 @@ The config is in the form of a python dictionary structured as follows::
         "2": {
             "field_name": "PAN",
             "field_type": "LLVAR",
-            "field_length": 0
+            "field_length": 0,
             "field_processor": "PAN",
-            "field_python_type": "string"
+            "field_python_type": "string",
             "field_date_format": "%y%m%d"}
     }
 
@@ -63,6 +67,37 @@ field_date_format
      <https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior>`_.
 
      Default format is "%y%m%d"
+
+output_data_elements
+====================
+
+This config defines the ISO elements that will be present in CSV file output. Is a list of the field keys
+
+.. code-block:: json
+
+    ["MTI", "DE2", "DE3", "DE4", "DE12", "DE14", "DE22", "DE23", "DE24", "DE25", "DE26"]
+
+
+mci_parameter_tables
+====================
+
+Provides configuration required to extract IPM parameter extracts
+
+.. code-block:: json
+
+    {
+        "IP0006T1": {
+            "effective_timestamp": {"start": 1, "end": 10},
+            "active_inactive_code": {"start": 7, "end": 8},
+            "table_id": {"start": 8, "end": 11},
+            "card_program_id": {"start": 11, "end": 14},
+            "data_element_id": {"start": 14, "end": 17},
+            "data_element_name": {"start": 17, "end": 74},
+            "data_element_format": {"start": 74, "end": 77}
+        },
+        "IP0040T1": {}
+    }
+
 """
 
 config = {
@@ -128,5 +163,47 @@ config = {
         "DE50", "DE63", "DE71", "DE73", "DE93", "DE94", "DE95", "DE100", "PDS0023",
         "PDS0052", "PDS0122", "PDS0148", "PDS0158", "PDS0165", "DE43_NAME", "DE43_SUBURB",
         "DE43_POSTCODE", "ICC_DATA"
-    ]
+    ],
+    "mci_parameter_tables": {
+        "IP0006T1": {
+            "effective_timestamp": {"start": 1, "end": 10},
+            "active_inactive_code": {"start": 7, "end": 8},
+            "table_id": {"start": 8, "end": 11},
+            "card_program_id": {"start": 11, "end": 14},
+            "data_element_id": {"start": 14, "end": 17},
+            "data_element_name": {"start": 17, "end": 74},
+            "data_element_format": {"start": 74, "end": 77}
+        },
+        "IP0040T1": {
+            "effective_timestamp": {"start": 1, "end": 7},
+            "active_inactive_code": {"start": 7, "end": 8},
+            "table_id": {"start": 8, "end": 11},
+            "low_range": {"start": 11, "end": 30},
+            "gcms_product": {"start": 30, "end": 33},
+            "high_range": {"start": 33, "end": 52},
+            "card_program_identifier": {"start": 52, "end": 55},
+            "card_program_priority": {"start": 55, "end": 57},
+            "member_id": {"start": 57, "end": 68},
+            "product_type": {"start": 68, "end": 69},
+            "endpoint": {"start": 69, "end": 76},
+            "card_country_alpha": {"start": 76, "end": 79},
+            "card_country_numeric": {"start": 79, "end": 82},
+            "card_region": {"start": 82, "end": 83},
+            "product_class": {"start": 83, "end": 86},
+            "tran_routing_ind": {"start": 86, "end": 87},
+            "first_present_reassign_ind": {"start": 87, "end": 88},
+            "product_reassign_switch": {"start": 88, "end": 89},
+            "pwcb_optin_switch": {"start": 89, "end": 90},
+            "licenced_product_id": {"start": 90, "end": 93},
+            "mapping_service_ind": {"start": 93, "end": 94},
+            "alm_participation_ind": {"start": 94, "end": 95},
+            "alm_activation_date": {"start": 95, "end": 101},
+            "cardholder_billing_currency_default": {"start": 101, "end": 104},
+            "cardholder_billing_currency_default_exponent": {"start": 104, "end": 105},
+        },
+        "IP0075T1": {
+            "mcc_code": {"start": 12, "end": 16},
+            "cab_code": {"start": 16, "end": 20}
+        }
+    }
 }

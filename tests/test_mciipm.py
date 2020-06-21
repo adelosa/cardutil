@@ -3,7 +3,7 @@ import unittest
 
 from cardutil.mciipm import (
     VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014, vbs_list_to_bytes,
-    vbs_bytes_to_list)
+    vbs_bytes_to_list, IpmParamReader)
 
 from tests import message_ascii_raw, message_ebcdic_raw, print_stream
 
@@ -103,6 +103,28 @@ class MciIpmTestCase(unittest.TestCase):
                 writer.write(record)
             else:
                 writer.close()
+            print_stream(in_data, "VBS in data")
+
+            reader = VbsReader(in_data)
+            results = list(reader)
+            print(results)
+
+        self.assertEqual(results, records)
+
+    def test_vbsreader_vbs_file_missing_0_len(self):
+        """
+        The reader can handle VBS files that don't have final 0 length record
+        """
+        # create the input file bytes -- test_file
+        records = [b'12345678901234567890' for _ in range(5)]
+        with io.BytesIO() as in_data:
+
+            # write vbs test file
+            writer = VbsWriter(in_data)
+            # don't call close method which writes the zero length record
+            for record in records:
+                writer.write(record)
+
             print_stream(in_data, "VBS in data")
 
             reader = VbsReader(in_data)
@@ -260,6 +282,26 @@ class MciIpmTestCase(unittest.TestCase):
         vbs_list = vbs_bytes_to_list(vbs_data)
         print(vbs_list)
         self.assertEqual(vbs_list, test_bytes_list)
+
+    def test_ipm_param_reader(self):
+        param_file_data = [
+            b'2011101414AIP0000T1IP0000T1 TABLE LIST                 ' + 188 * b'.' + b'001',
+            b'2014101414AIP0000T1IP0040T1 ACCOUNT RANGE TABLE        ' + 188 * b'.' + b'036',
+            b'TRAILER RECORD IP0000T1  00000218                                               ',
+            b'........xxx....',  # dummy record
+            b'1711114A0365116545113000000000MCC5116545113999999999MCC020000000152710084563AUS036CMCC NNYMCC N0000000362'
+            b'0000000000000000000000000000 000000NN   000000NNNN0NUNN0N N     ',
+        ]
+
+        with io.BytesIO() as test_param_stream:
+            with VbsWriter(test_param_stream, blocked=True) as test_param_vbs:
+                test_param_vbs.write_many(param_file_data)
+
+            test_param_stream.seek(0)
+            reader = IpmParamReader(test_param_stream, table_id='IP0040T1')
+
+            for record in reader:
+                print(record)
 
 
 if __name__ == '__main__':
