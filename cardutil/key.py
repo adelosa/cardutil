@@ -27,20 +27,21 @@ def get_enc_zone_master_key(master_key: str, *key_parts: str) -> (str, str):
     return hexlify(enc_key).decode(), kcv
 
 
-def calculate_kcv(binary_key: bytes) -> str:
+def calculate_kcv(binary_key: bytes, kvc_length: int = 6) -> str:
     """
     Calculate key check value for given key
 
     :param binary_key: the key bytes
+    :param kvc_length: length of kvc value: default is 6
     :return: key check value
     """
     cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
     encryptor = cipher.encryptor()
     ct = encryptor.update(b'\x00' * 16) + encryptor.finalize()
-    return hexlify(ct)[0:6].decode()
+    return hexlify(ct)[0:kvc_length].decode()
 
 
-def encrypt_key(key_to_encrypt: str, master_key: str) -> str:
+def encrypt_key(key_to_encrypt: str, master_key: str) -> bytes:
     binary_key = unhexlify(master_key)
     binary_data = unhexlify(key_to_encrypt)
     cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
@@ -48,15 +49,11 @@ def encrypt_key(key_to_encrypt: str, master_key: str) -> str:
     return encryptor.update(binary_data) + encryptor.finalize()
 
 
-def load_remote_key(enc_key_zmk, enc_key_lmk):
-    pass
-
-
 if __name__ == '__main__':
     k1 = '6D6BE51F04F76167491554FE25F7ABEF'
     k2 = '67499B2CF137DFCB9EA28FF757CD10A7'
-    master_key = '00' * 16
-    enc_key, kcv = get_enc_zone_master_key(master_key, k1, k2)
+    m_key = '00' * 16
+    enc_key, kcv = get_enc_zone_master_key(m_key, k1, k2)
 
     print(enc_key)
     print(kcv)

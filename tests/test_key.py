@@ -1,6 +1,8 @@
+import binascii
 import unittest
 
-from cardutil.key import get_zone_master_key, get_enc_zone_master_key
+
+from cardutil.key import get_zone_master_key, get_enc_zone_master_key, calculate_kcv
 
 
 class KeyTestCase(unittest.TestCase):
@@ -13,8 +15,13 @@ class KeyTestCase(unittest.TestCase):
         enc_key, kvc = get_enc_zone_master_key(
             '00' * 16,
             '6d6be51f04f76167491554fe25f7abef', '67499b2cf137dfcb9ea28ff757cd10a7')
-        print(enc_key)
-        print(kvc)
+        self.assertEqual(enc_key, '06ed6dbd8e7d3a9431a9df6ab329df3e')
+        self.assertEqual(kvc, '05ee1d')
+
+    def test_calculate_kvc(self):
+        self.assertEqual(calculate_kcv(binascii.unhexlify('67C4A7191ADAFD086432CE0DD6384AB8')), '20d40b')
+        self.assertEqual(
+            calculate_kcv(binascii.unhexlify('67C4A7191ADAFD086432CE0DD6384AB8'), kvc_length=8), '20d40bfb')
 
 
 if __name__ == '__main__':
