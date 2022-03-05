@@ -2,8 +2,8 @@
 Contributing
 ============
 
-All contributions are most welcome and should be submitted via a pull request on Bitbucket.
-https://bitbucket.org/hoganman/cardutil/pull-requests
+All contributions are most welcome and should be submitted via a pull request on GitHub.
+https://github.com/adelosa/cardutil/pulls
 
 
 Pull Request Guidelines
@@ -23,7 +23,7 @@ Types of Contributions
 Report Bugs
 -----------
 
-Report bugs at https://bitbucket.org/hoganman/cardutil/issues
+Report bugs at https://github.com/adelosa/cardutil/issues
 
 If you are reporting a bug, please include:
 
@@ -57,8 +57,8 @@ install
 
 ::
 
-    $ git clone https://bitbucket.org/hoganman/cardutil.git
-    $ python setup.py develop
+    $ git clone https://github.com/adelosa/cardutil.git
+    $ pip install -e .[test]
 
 
 unit test
@@ -66,7 +66,6 @@ unit test
 
 ::
 
-    $ pip install -e ".[test]"
     $ pytest
 
 coverage

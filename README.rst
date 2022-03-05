@@ -48,7 +48,7 @@ Information
 * Low memory usage
 * Download from `pypi <https://pypi.org/project/cardutil/>`_
 * Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
-* Source hosted at `Bitbucket <https://bitbucket.com/hoganman/cardutil>`_
+* Source hosted at `GitHub <https://github.com/adelosa/cardutil>`_
 
 acknowledgements
 ================

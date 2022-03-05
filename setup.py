@@ -11,7 +11,7 @@ setup(name='cardutil',
       long_description_content_type='text/x-rst',
       author='Anthony Delosa',
       author_email='adelosa@gmail.com',
-      url='https://bitbucket.org/hoganman/cardutil',
+      url='https://github.com/adelosa/cardutil',
       install_requires=[],
       entry_points={
           'console_scripts': [
@@ -35,4 +35,5 @@ setup(name='cardutil',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
       ])
