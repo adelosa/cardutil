@@ -58,7 +58,7 @@ install
 ::
 
     $ git clone https://github.com/adelosa/cardutil.git
-    $ pip install -e .[test]
+    $ pip install -e ."[test]"
 
 
 unit test
@@ -89,10 +89,9 @@ docs
     $ open ./docs/build/html/index.html
 
 .. warning:: If you are updating documentation and want changes in source code reflected
-          in the documentation then you must install using `python setup.py develop`.
+          in the documentation then you must install using `python -m pip install -e ."[test]"`.
 
-          If you install cardutil package using pip, or don't use the develop command then
-          it will use lib/site_packages code to generate.
+          If you don't use the `-e` option then it will use lib/site_packages code to generate.
 
 release
 -------
