@@ -4,19 +4,37 @@ cardutil
 Cardutil is a python package for working with payment card systems including
 command line tools for working with Mastercard IPM files.
 
-
 .. image:: https://img.shields.io/pypi/l/cardutil.svg
+        :target: https://pypi.org/project/cardutil
+        :alt: License
+
 .. image:: https://img.shields.io/pypi/v/cardutil.svg
-   :target: https://pypi.org/project/cardutil
-   :alt: Pypi download
+        :target: https://pypi.org/project/cardutil
+        :alt: Version
+
 .. image:: https://img.shields.io/pypi/wheel/cardutil.svg
+        :target: https://pypi.org/project/cardutil
+        :alt: Wheel
+
 .. image:: https://img.shields.io/pypi/implementation/cardutil.svg
+        :target: https://pypi.org/project/cardutil
+        :alt: Implementation
+
 .. image:: https://img.shields.io/pypi/status/cardutil.svg
+        :target: https://pypi.org/project/cardutil
+        :alt: Status
+
 .. image:: https://img.shields.io/pypi/dm/cardutil.svg
+        :target: https://pypi.org/project/cardutil
+        :alt: Downloads per month
+
 .. image:: https://img.shields.io/pypi/pyversions/cardutil.svg
+        :target: https://pypi.org/project/cardutil
+        :alt: Python versions
+
 .. image:: https://readthedocs.org/projects/cardutil/badge/?version=latest
-   :target: https://cardutil.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
+        :target: https://cardutil.readthedocs.io/en/latest/?badge=latest
+        :alt: Documentation Status
 
 Features
 ========
@@ -43,7 +61,7 @@ Information
 * Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
 * Source hosted at `GitHub <https://github.com/adelosa/cardutil>`_
 
-acknowledgements
+Acknowledgements
 ================
 The python `hexdump` library is embedded in this package. Many thank to Anatoly Techtonik <techtonik@gmail.com>
 This library is a life saver for debugging issues with binary data.
