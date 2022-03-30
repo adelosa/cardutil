@@ -6,6 +6,18 @@ import unittest
 from cardutil.cli import mci_ipm_to_csv
 from cardutil.config import config
 
+CONFIG_DATA = """
+{
+    "bit_config": {
+        "38": {
+            "field_name": "Approval code",
+            "field_type": "FIXED",
+            "field_length": 6
+        }
+    }
+}
+"""
+
 
 class MciIpmToCsvTestCase(unittest.TestCase):
     def test_mci_ipm_to_csv_cli_parser(self):
@@ -49,6 +61,21 @@ class MciIpmToCsvTestCase(unittest.TestCase):
             in_ipm.close()
         mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
         mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_filename=in_ipm_name + '.csv', out_encoding='latin_1')
+
+        # run with config file
+        with tempfile.NamedTemporaryFile(mode='w+', delete=False) as in_config:
+            config_filename = in_config.name
+            in_config.write(CONFIG_DATA)
+            in_config.close()
+            mci_ipm_to_csv.cli_run(
+                in_filename=in_ipm_name,
+                out_filename=in_ipm_name + '.csv',
+                config_file=in_config.name,
+                out_encoding='latin_1')
+            os.remove(config_filename)
+        csv_output = open(in_ipm_name + '.csv', 'r').read()
+        self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
+
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
 
