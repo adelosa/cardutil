@@ -12,6 +12,10 @@ def cli_run(**kwargs):
     if not kwargs.get('out_filename'):
         kwargs['out_filename'] = kwargs['in_filename'] + '.out'
 
+    # if --no1014encoding provided, override new in-format and out-format parms
+    if kwargs.get('no1014blocking'):
+        kwargs['in_format'] = kwargs['out_format'] = 'vbs'
+
     with open(kwargs['in_filename'], 'rb') as in_file, open(kwargs['out_filename'], 'wb') as out_file:
         mci_ipm_param_encode(in_file, out_file=out_file, **kwargs)
 
@@ -24,12 +28,15 @@ def cli_parser():
     parser.add_argument('--in-encoding')
     parser.add_argument('--out-encoding')
     parser.add_argument('--no1014blocking', action='store_true')
+    parser.add_argument('--in-format', choices=['vbs', '1014'], default='1014')
+    parser.add_argument('--out-format', choices=['vbs', '1014'], default='1014')
     add_version(parser)
 
     return parser
 
 
-def mci_ipm_param_encode(in_file, out_file, in_encoding=None, out_encoding=None, no1014blocking=False, **_):
+def mci_ipm_param_encode(in_file, out_file, in_encoding=None, out_encoding=None,
+                         in_format='1014', out_format='1014', **_):
     """
     Change encoding of parameter file from one encoding format to another.
 
@@ -37,20 +44,22 @@ def mci_ipm_param_encode(in_file, out_file, in_encoding=None, out_encoding=None,
     :param out_file: output parameter file object
     :param in_encoding: input file encoding string
     :param out_encoding: output file encoding string
-    :param no1014blocking: set if 1014 blocking not required
+    :param in_format: input file format (vbs/1014)
+    :param out_format: output file format (vbs/1014)
     :return: None
     """
     if not in_encoding:
         in_encoding = 'latin_1'
     if not out_encoding:
         out_encoding = in_encoding
-    blocked = not no1014blocking
-    vbs_reader = VbsReader(in_file, blocked=blocked)
+
+    in_blocked = True if in_format == '1014' else False
+    vbs_reader = VbsReader(in_file, blocked=in_blocked)
 
     in_records = (record.decode(in_encoding) for record in vbs_reader)
     out_records = (record.encode(out_encoding) for record in in_records)
-
-    with VbsWriter(out_file, blocked=blocked) as vbs_writer:
+    out_blocked = True if out_format == '1014' else False
+    with VbsWriter(out_file, blocked=out_blocked) as vbs_writer:
         vbs_writer.write_many(out_records)
 
 
