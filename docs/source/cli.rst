@@ -45,7 +45,9 @@ Changes the encoding of a Mastercard IPM parameter file
 .. code-block:: text
 
     usage: mci_ipm_param_encode [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
-                                [--out-encoding OUT_ENCODING] [--no1014blocking]
+                                [--out-encoding OUT_ENCODING]
+                                [--no1014blocking]
+                                [--in-format {vbs,1014}][--out-format {vbs,1014}]
                                 [--version]
                                 in_filename
 
@@ -60,6 +62,8 @@ Changes the encoding of a Mastercard IPM parameter file
       --in-encoding IN_ENCODING
       --out-encoding OUT_ENCODING
       --no1014blocking
+      --in-format {vbs,1014}
+      --out-format {vbs,1014}
       --version             show program's version number and exit
 
 ``mci_ipm_encode``
@@ -68,8 +72,10 @@ Changes the encoding of a Mastercard IPM file
 
 .. code-block:: text
 
-    usage: mci_ipm_encode [-h] [-o OUT_FILENAME] [--in-encoding IN_ENCODING]
-                          [--out-encoding OUT_ENCODING] [--no1014blocking]
+    usage: mci_ipm_encode [-h] [-o OUT_FILENAME]
+                          [--in-encoding IN_ENCODING] [--out-encoding OUT_ENCODING]
+                          [--no1014blocking]
+                          [--in-format {vbs,1014}][--out-format {vbs,1014}]
                           [--version]
                           in_filename
 
@@ -84,8 +90,9 @@ Changes the encoding of a Mastercard IPM file
       --in-encoding IN_ENCODING
       --out-encoding OUT_ENCODING
       --no1014blocking
+      --in-format {vbs,1014}
+      --out-format {vbs,1014}
       --version             show program's version number and exit
-
 
 
 ``mci_csv_to_ipm``
@@ -107,6 +114,15 @@ Creates a Mastercard IPM file from a csv file
 
     It is recommended that if you require more than basic ISO 8601 calendar date parsing, that you install the python-dateutil module.
 
+.. warning::
+   **Inclusion of both PDS and DE fields that contain PDS fields**
+
+   If your CSV file contains both PDS fields (PDSxxxx) and DE fields that are
+   used to store PDS fields (like DE48) then the contents of DE48 will dropped
+   and the PDS fields provided will overwrite the value.
+
+   You should either provide ALL PDS fields or provide the DE fields that contain
+   PDS fields but not both.
 
 .. code-block:: text
 
