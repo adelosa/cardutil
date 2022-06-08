@@ -1,6 +1,5 @@
 import io
 import os
-import pprint
 import tempfile
 import unittest
 
@@ -45,7 +44,6 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
 
     def test_mci_ipm_param_encode_parser(self):
         args = vars(mci_ipm_param_encode.cli_parser().parse_args(['file1.ipm']))
-        pprint.pp(args)
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': None,
