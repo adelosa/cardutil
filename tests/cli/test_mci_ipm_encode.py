@@ -35,7 +35,7 @@ class MciIpmEncodeTestCase(unittest.TestCase):
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': None,
-             'out_encoding': None, 'no1014blocking': False})
+             'out_encoding': None, 'in_format': '1014', 'out_format': '1014', 'no1014blocking': False})
 
     def test_mci_ipm_encode_input_params(self):
         """
@@ -51,5 +51,6 @@ class MciIpmEncodeTestCase(unittest.TestCase):
 
         mci_ipm_encode.cli_run(in_filename=in_ipm_name)
         mci_ipm_encode.cli_run(in_filename=in_ipm_name, out_filename=in_ipm_name + '.out')
+        mci_ipm_encode.cli_run(in_filename=in_ipm_name, no1014blocking=True)
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.out')
