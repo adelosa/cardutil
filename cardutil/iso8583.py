@@ -454,11 +454,14 @@ def _pds_to_de(dict_values):
     :return: list of byte strings containing pds data, or None if no fields
     """
     # get the PDS field keys in order
+    LOGGER.debug(f'dict_values={dict_values}')
     keys = sorted([key for key in dict_values if key.startswith('PDS')])
+    LOGGER.debug(f'keys={keys}')
     output = ''
     outputs = []
     for key in keys:
         tag = int(key[3:])
+        LOGGER.debug(f'tag={tag}')
         length = len(dict_values[key])
         add_output = f'{tag:04}{length:03}{dict_values[key]}'
         if len(output + add_output) > 999:
