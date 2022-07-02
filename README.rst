@@ -43,6 +43,7 @@ Features
 * Check digit calculator
 * Encrypted pin block generator
 * Visa PVV calculator
+* Permissive license (MIT)
 
 Installing
 ==========

@@ -98,6 +98,19 @@ from cardutil import iso8583, config
 LOGGER = logging.getLogger(__name__)
 
 
+class MciIpmDataError(ValueError):
+
+    record_number = None
+    binary_context_data = None
+
+    def __init__(self, *args, **kwargs):
+        super(MciIpmDataError, self).__init__(*args)
+        if kwargs.get('record_number'):
+            self.record_number = kwargs['record_number']
+        if kwargs.get('binary_context_data'):
+            self.binary_context_data = kwargs['binary_context_data']
+
+
 class Block1014(object):
     """
     1014 Blocker for file objects.
@@ -226,6 +239,9 @@ class VbsReader(object):
                 print(vbs_record)
 
     """
+    record_number = 1
+    last_record = None
+
     def __init__(self, vbs_file: typing.BinaryIO, blocked: bool = False):
         """
         Create a VbsReader object
@@ -259,17 +275,28 @@ class VbsReader(object):
             # this can happen if the VBS does not have a zero length record at end.
             # You can recreate using VbsWriter and not calling close method.
             # The reader will just accept we are at end if this happens.
-            LOGGER.error(f'requested 4 bytes, got {len(record_length_raw)} -- exiting')
+            LOGGER.warning(f'Unable to read next record length - requested 4 bytes,'
+                           ' got {len(record_length_raw)} -- assuming end of data')
             raise StopIteration
 
         record_length = struct.unpack(">i", record_length_raw)[0]
         LOGGER.debug("record_length=%s", record_length)
+
+        # throw mcipm data error if length is negative or excessively large (indicates bad input)
+        if record_length < 0 or record_length > 3000:
+            raise MciIpmDataError(f"Invalid record length - value read was {record_length}",
+                                  record_number=self.record_number,
+                                  binary_context_data=self.last_record)
 
         # exit if last record (length=0)
         if record_length == 0:
             raise StopIteration
 
         record = self.vbs_data.read(record_length)
+        # TODO ensure complete record has been read
+
+        self.last_record = record  # save last record read
+        self.record_number += 1    # increment record counter
         return record
 
 
@@ -367,7 +394,7 @@ class IpmParamReader(VbsReader):
 
         # check if config available for table id
         if not self.param_config.get(table_id):
-            raise ValueError(f'Parameter config not available for table {table_id}')
+            raise MciIpmDataError(f'Parameter config not available for table {table_id}')
 
         # load the table index
         trailer_record_found = False
@@ -384,7 +411,7 @@ class IpmParamReader(VbsReader):
                 break
         print(self.table_index)
         if not trailer_record_found:
-            raise ValueError('parameter file missing IP0000T1 trailer record')
+            raise MciIpmDataError('parameter file missing IP0000T1 trailer record')
 
     def __next__(self) -> dict:
         while True:
@@ -568,9 +595,9 @@ def unblock_1014(input_data: typing.BinaryIO, output_data: typing.BinaryIO):
         if not record:
             break
         if len(record) != 1014:
-            raise ValueError('Invalid file size')
+            raise MciIpmDataError('Invalid record size for 1014 blocked')
         if record[-2:] != pad_char * 2:
-            raise ValueError('Invalid 1014 block line ending')
+            raise MciIpmDataError('Invalid line ending for 1014 blocked')
         output_data.write(record[0:1012])
     output_data.seek(0)
     input_data.seek(0)

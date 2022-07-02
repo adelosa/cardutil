@@ -1,3 +1,4 @@
+import contextlib
 import io
 import os
 import tempfile
@@ -25,13 +26,13 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         self.assertEqual(
             args,
             {'in_encoding': None, 'out_encoding': None, 'in_filename': 'file1.ipm', 'no1014blocking': False,
-             'out_filename': None, 'config_file': None})
+             'out_filename': None, 'config_file': None, 'debug': False})
 
         args = vars(mci_ipm_to_csv.cli_parser().parse_args(['file1.ipm', '--in-encoding', 'latin_1']))
         self.assertEqual(
             args,
             {'in_encoding': 'latin_1', 'out_encoding': None, 'in_filename': 'file1.ipm', 'no1014blocking': False,
-             'out_filename': None, 'config_file': None})
+             'out_filename': None, 'config_file': None, 'debug': False})
 
     def test_ipm_to_csv_bad_data_de38(self):
         """
@@ -71,13 +72,39 @@ class MciIpmToCsvTestCase(unittest.TestCase):
                 in_filename=in_ipm_name,
                 out_filename=in_ipm_name + '.csv',
                 config_file=in_config.name,
-                out_encoding='latin_1')
+                out_encoding='latin_1',
+                debug=True
+            )
             os.remove(config_filename)
         csv_output = open(in_ipm_name + '.csv', 'r').read()
         self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
 
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
+
+    def test_ipm_to_csv_generate_exception(self):
+        """
+        Actually run using real files, and exception generated
+        Triggered through negative RDW on second record -- invalid record length
+        :return:
+        """
+        in_ipm_data = (b'\x00\x00\x00\x1a0100\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                       b'nXmXlX\xFF\xFF\x00\x00')
+
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as in_ipm:
+            in_ipm.write(in_ipm_data)
+            in_ipm_name = in_ipm.name
+            print(in_ipm_name)
+            in_ipm.close()
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
+            output = f.getvalue().splitlines()
+        os.remove(in_ipm_name)
+        print(output)
+        assert len(output) == 11
+        assert output[6] == '*** ERROR - processing has stopped ***'
 
 
 if __name__ == '__main__':

@@ -8,6 +8,17 @@ from cardutil import __version__
 LOGGER = logging.getLogger(__name__)
 
 
+def print_banner(command_name, parms):
+    message = (f'{command_name} -- cardutil version {__version__}\n'
+               f'(C)Copyright 2019-2022 Anthony Delosa\n'
+               f'See https://github.com/adelosa/cardutil')
+    print(message)
+    print('parameters:')
+    for parm_key in parms:
+        if parms[parm_key]:
+            print(f' -{parm_key}:{parms[parm_key]}')
+
+
 def add_version(parser):
     parser.add_argument('--version', action='version', version=f'%(prog)s (cardutil {__version__})')
 

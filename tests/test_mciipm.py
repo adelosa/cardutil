@@ -3,12 +3,18 @@ import unittest
 
 from cardutil.mciipm import (
     VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014, vbs_list_to_bytes,
-    vbs_bytes_to_list, IpmParamReader)
+    vbs_bytes_to_list, IpmParamReader, MciIpmDataError)
 
 from tests import message_ascii_raw, message_ebcdic_raw, print_stream
 
 
 class MciIpmTestCase(unittest.TestCase):
+
+    def test_mciipm_data_error_exception(self):
+        err = MciIpmDataError("Message", record_number=1, binary_context_data=b'1234')
+        assert str(err) == 'Message'
+        assert err.record_number == 1
+        assert err.binary_context_data == b'1234'
 
     def test_real_message_example_ascii(self):
         # create the input ipm file bytes -- test_file
@@ -150,6 +156,15 @@ class MciIpmTestCase(unittest.TestCase):
             results = list(reader)
             print(results)
             self.assertEqual(results, records)
+
+    def test_vbsreader_exceptions(self):
+        # create the input file bytes -- test_file
+        with io.BytesIO() as in_data:
+            in_data.write(b'\xFF\xFF\x00\x00')  # Only 3 bytes
+            print_stream(in_data, "VBS in data")
+            reader = VbsReader(in_data)
+            with self.assertRaises(MciIpmDataError) as context:
+                list(reader)
 
     def test_file_blocker_compare(self):
         """

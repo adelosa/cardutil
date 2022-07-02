@@ -1,25 +1,40 @@
 import argparse
 import collections
 import csv
+import logging
 
-from cardutil.cli import add_version, get_config
-from cardutil.mciipm import IpmReader
+from cardutil.cli import add_version, get_config, print_banner
+from cardutil.mciipm import IpmReader, MciIpmDataError
+from cardutil.vendor import hexdump
 
 
 def cli_entry():
-    cli_run(**vars(cli_parser().parse_args()))
+    return cli_run(**vars(cli_parser().parse_args()))
 
 
 def cli_run(**kwargs):
 
+    print_banner('mci_ipm_to_csv', kwargs)
     config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
+
+    if kwargs.get('debug'):
+        logging.basicConfig(level=logging.DEBUG)
 
     if not kwargs.get('out_filename'):
         kwargs['out_filename'] = kwargs['in_filename'] + '.csv'
 
-    with open(kwargs['in_filename'], 'rb') as in_ipm:
-        with open(kwargs['out_filename'], 'w', encoding=kwargs.get('out_encoding')) as out_csv:
-            mci_ipm_to_csv(in_ipm=in_ipm, out_csv=out_csv, config=config, **kwargs)
+    try:
+        with open(kwargs['in_filename'], 'rb') as in_ipm:
+            with open(kwargs['out_filename'], 'w', encoding=kwargs.get('out_encoding')) as out_csv:
+                mci_ipm_to_csv(in_ipm=in_ipm, out_csv=out_csv, config=config, **kwargs)
+    except MciIpmDataError as err:
+        print("*** ERROR - processing has stopped ***")
+        if err.record_number:
+            print(f'Error detected in record {err.record_number}')
+        print(err)
+        if err.binary_context_data:
+            hexdump.hexdump(err.binary_context_data)
+        return -1
 
 
 def dicts_to_csv(data_list, output_file, field_list=None):
@@ -57,6 +72,7 @@ def cli_parser():
     parser.add_argument('-o', '--out-filename')
     parser.add_argument('--in-encoding')
     parser.add_argument('--out-encoding')
+    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--no1014blocking', action='store_true')
     parser.add_argument('--config-file', help='File containing cardutil configuration - JSON format')
     add_version(parser)
