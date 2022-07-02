@@ -19,7 +19,6 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as in_vbs:
             with VbsWriter(in_vbs, blocked=True) as writer:
                 writer.write(b"Parameter message data")
-            in_vbs_name = in_vbs.name
             in_vbs.close()
 
     def test_mci_ipm_param_encode(self):
@@ -50,7 +49,7 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
              'out_encoding': None, 'no1014blocking': False,
              'in_format': '1014', 'out_format': '1014'})
 
-    def test_mci_ipm_param_encode_input_params_blocked(self):
+    def test_mci_ipm_param_encode_input_params_variations(self):
         """
         Run mci_ipm_param_encode using real files
         """
@@ -78,7 +77,8 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
         os.remove(output_file_name)
 
         # with 1014 input and vbs output
-        mci_ipm_param_encode.cli_run(in_filename=in_vbs_name, out_filename=output_file_name, in_format='1014', out_format='vbs')
+        mci_ipm_param_encode.cli_run(
+            in_filename=in_vbs_name, out_filename=output_file_name, in_format='1014', out_format='vbs')
         with open(in_vbs_name + '.out', 'rb') as output_file:
             hexdump(output_file.read())
             print('*'*20)

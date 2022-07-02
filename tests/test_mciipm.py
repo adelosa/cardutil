@@ -163,7 +163,7 @@ class MciIpmTestCase(unittest.TestCase):
             in_data.write(b'\xFF\xFF\x00\x00')  # Only 3 bytes
             print_stream(in_data, "VBS in data")
             reader = VbsReader(in_data)
-            with self.assertRaises(MciIpmDataError) as context:
+            with self.assertRaises(MciIpmDataError):
                 list(reader)
 
     def test_file_blocker_compare(self):

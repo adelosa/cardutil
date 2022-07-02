@@ -117,8 +117,11 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         Run mci_csv_to_ipm test with DE48 only
         In this case, DE written as is
         """
-        in_csv_data = 'MTI,DE2,DE3,DE4,DE12,DE14,DE22,DE23,DE24,DE25,DE26,DE30,DE31,DE33,DE37,DE38,DE40,DE41,DE42,DE48,DE49,DE50,DE63,DE71,DE73,DE93,DE94,DE95,DE100,DE43_NAME,DE43_SUBURB,DE43_POSTCODE,ICC_DATA\n' \
-                      '1644,,,,,,,,697,,,,,,,,,,,01050250022112070000005167800005011002500221120700000015995000050122001T,,,,00000001,,,,,,,,,'
+        in_csv_data = ('MTI,DE2,DE3,DE4,DE12,DE14,DE22,DE23,DE24,DE25,DE26,DE30,DE31,DE33,DE37,DE38,DE40,DE41,DE42,'
+                       'DE48,DE49,DE50,DE63,DE71,DE73,DE93,DE94,DE95,DE100,DE43_NAME,DE43_SUBURB,DE43_POSTCODE,'
+                       'ICC_DATA\n'
+                       '1644,,,,,,,,697,,,,,,,,,,,01050250022112070000005167800005011002500221120700000015995000050'
+                       '122001T,,,,00000001,,,,,,,,,')
 
         # run the conversion
         recs = self.run_cli_with_csv(in_csv_data, out_encoding='latin1')
@@ -133,8 +136,11 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         Run mci_csv_to_ipm test with DE48 column and PDS
         In this case, PDS overrides DE, and only PDS value placed into PDS fields, DE values dropped
         """
-        in_csv_data = 'MTI,DE2,DE3,DE4,DE12,DE14,DE22,DE23,DE24,DE25,DE26,DE30,DE31,DE33,DE37,DE38,DE40,DE41,DE42,DE48,DE49,DE50,DE63,DE71,DE73,DE93,DE94,DE95,DE100,DE43_NAME,DE43_SUBURB,DE43_POSTCODE,ICC_DATA,PDS0191\n' \
-                      '1644,,,,,,,,697,,,,,,,,,,,01050250022112070000005167800005011002500221120700000015995000050122001T,,,,00000001,,,,,,,,,,2'
+        in_csv_data = ('MTI,DE2,DE3,DE4,DE12,DE14,DE22,DE23,DE24,DE25,DE26,DE30,DE31,DE33,DE37,DE38,DE40,DE41,DE42,'
+                       'DE48,DE49,DE50,DE63,DE71,DE73,DE93,DE94,DE95,DE100,DE43_NAME,DE43_SUBURB,DE43_POSTCODE,'
+                       'ICC_DATA,PDS0191\n'
+                       '1644,,,,,,,,697,,,,,,,,,,,010502500221120700000051678000050110025002211207000000159950000501'
+                       '22001T,,,,00000001,,,,,,,,,,2')
 
         # run the conversion
         recs = self.run_cli_with_csv(in_csv_data, out_encoding='latin1')
@@ -155,8 +161,9 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         Check that all provided PDS fields are loaded into DE fields
         :return:
         """
-        in_csv_data = 'MTI,DE2,DE3,DE4,DE12,DE14,DE22,DE23,DE24,DE25,DE26,DE30,DE31,DE33,DE37,DE38,DE40,DE41,DE42,DE49,DE50,DE63,DE71,DE73,DE93,DE94,DE95,DE100,DE43_NAME,DE43_SUBURB,DE43_POSTCODE,ICC_DATA,PDS0191,PDS0122\n' \
-                      '1644,,,,,,,,697,,,,,,,,,,,,,,00000001,,,,,,,,,,2,T'
+        in_csv_data = ('MTI,DE2,DE3,DE4,DE12,DE14,DE22,DE23,DE24,DE25,DE26,DE30,DE31,DE33,DE37,DE38,DE40,DE41,DE42,'
+                       'DE49,DE50,DE63,DE71,DE73,DE93,DE94,DE95,DE100,DE43_NAME,DE43_SUBURB,DE43_POSTCODE,ICC_DATA,'
+                       'PDS0191,PDS0122\n1644,,,,,,,,697,,,,,,,,,,,,,,00000001,,,,,,,,,,2,T')
         # run the conversion
         recs = self.run_cli_with_csv(in_csv_data, out_encoding='latin1')
         # perform the checks

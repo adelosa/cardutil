@@ -276,7 +276,7 @@ class VbsReader(object):
             # You can recreate using VbsWriter and not calling close method.
             # The reader will just accept we are at end if this happens.
             LOGGER.warning(f'Unable to read next record length - requested 4 bytes,'
-                           ' got {len(record_length_raw)} -- assuming end of data')
+                           f' got {len(record_length_raw)} -- assuming end of data')
             raise StopIteration
 
         record_length = struct.unpack(">i", record_length_raw)[0]
