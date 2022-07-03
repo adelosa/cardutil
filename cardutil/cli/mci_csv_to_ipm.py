@@ -1,7 +1,7 @@
 import argparse
 from csv import DictReader
 
-from cardutil.cli import add_version, get_config
+from cardutil.cli import add_version, get_config, print_banner
 from cardutil.mciipm import IpmWriter
 
 
@@ -10,7 +10,7 @@ def cli_entry():
 
 
 def cli_run(**kwargs):
-
+    print_banner('mci_csv_to_ipm', kwargs)
     config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
 
     if not kwargs.get('out_filename'):

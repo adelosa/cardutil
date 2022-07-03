@@ -49,10 +49,8 @@ class MideuTestCases(unittest.TestCase):
                 func=mideu.extract
             )
 
-        # csv_output = open(in_ipm_name + '.csv', 'r').read()
-        # self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
-        # os.remove(in_ipm_name)
-        # os.remove(in_ipm_name + '.csv')
+        os.remove(in_ipm_name)
+        os.remove(in_ipm_name + '.csv')
 
     def test_mideu_extract(self):
         """
@@ -140,3 +138,4 @@ class MideuTestCases(unittest.TestCase):
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.out')
         os.remove(in_ipm_name + '.out' + '.csv')
+        os.remove(in_ipm_name + '.out' + '.out')

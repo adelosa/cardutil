@@ -3,7 +3,7 @@ import collections
 import csv
 import logging
 
-from cardutil.cli import add_version, get_config, print_banner
+from cardutil.cli import add_version, get_config, print_banner, print_mciipm_data_error
 from cardutil.mciipm import IpmReader, MciIpmDataError
 from cardutil.vendor import hexdump
 
@@ -28,12 +28,7 @@ def cli_run(**kwargs):
             with open(kwargs['out_filename'], 'w', encoding=kwargs.get('out_encoding')) as out_csv:
                 mci_ipm_to_csv(in_ipm=in_ipm, out_csv=out_csv, config=config, **kwargs)
     except MciIpmDataError as err:
-        print("*** ERROR - processing has stopped ***")
-        if err.record_number:
-            print(f'Error detected in record {err.record_number}')
-        print(err)
-        if err.binary_context_data:
-            hexdump.hexdump(err.binary_context_data)
+        print_mciipm_data_error(err)
         return -1
 
 

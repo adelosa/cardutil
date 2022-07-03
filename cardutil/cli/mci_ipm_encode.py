@@ -1,6 +1,6 @@
 import argparse
 
-from cardutil.cli import add_version
+from cardutil.cli import add_version, print_banner
 from cardutil.mciipm import IpmReader, IpmWriter
 
 
@@ -9,7 +9,7 @@ def cli_entry():
 
 
 def cli_run(**kwargs):
-
+    print_banner('mci_ipm_encode', kwargs)
     if not kwargs.get('out_filename'):
         kwargs['out_filename'] = kwargs['in_filename'] + '.out'
 

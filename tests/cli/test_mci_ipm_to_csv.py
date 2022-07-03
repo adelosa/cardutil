@@ -102,6 +102,7 @@ class MciIpmToCsvTestCase(unittest.TestCase):
             mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
             output = f.getvalue().splitlines()
         os.remove(in_ipm_name)
+        os.remove(in_ipm_name + '.csv')
         print(output)
         assert len(output) == 11
         assert output[6] == '*** ERROR - processing has stopped ***'

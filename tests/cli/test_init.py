@@ -2,7 +2,8 @@ import unittest
 import io
 import contextlib
 
-from cardutil.cli import print_banner
+from cardutil.cli import print_banner, print_mciipm_data_error
+from cardutil.mciipm import MciIpmDataError
 
 
 class GetConfigTestCase(unittest.TestCase):
@@ -17,3 +18,9 @@ class GetConfigTestCase(unittest.TestCase):
         assert output[2] == 'See https://github.com/adelosa/cardutil'
         assert output[3] == 'parameters:'
         assert output[4] == ' -parm1:1'
+
+    def test_print_mciipmdataerror(self):
+        ex = MciIpmDataError("A data error", record_number=1, binary_context_data=b'1234')
+        print_mciipm_data_error(ex)
+        ex = MciIpmDataError("A data error")  # plain error
+        print_mciipm_data_error(ex)

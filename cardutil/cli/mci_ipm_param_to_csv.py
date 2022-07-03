@@ -1,7 +1,7 @@
 import argparse
 import csv
 
-from cardutil.cli import add_version, get_config
+from cardutil.cli import add_version, get_config, print_banner
 from cardutil import mciipm
 
 
@@ -10,7 +10,7 @@ def cli_entry():
 
 
 def cli_run(**kwargs):
-
+    print_banner('mci_ipm_param_to_csv', kwargs)
     config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
     param_config = config.get('mci_parameter_tables')
 

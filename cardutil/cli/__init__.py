@@ -4,6 +4,8 @@ import os
 
 from cardutil.config import config as pkg_config
 from cardutil import __version__
+from cardutil.mciipm import MciIpmDataError
+from cardutil.vendor.hexdump import hexdump
 
 LOGGER = logging.getLogger(__name__)
 
@@ -17,6 +19,15 @@ def print_banner(command_name, parms):
     for parm_key in parms:
         if parms[parm_key]:
             print(f' -{parm_key}:{parms[parm_key]}')
+
+
+def print_mciipm_data_error(err: MciIpmDataError):
+    print("*** ERROR - processing has stopped ***")
+    if err.record_number:
+        print(f'Error detected in record {err.record_number}')
+    print(err)
+    if err.binary_context_data:
+        hexdump(err.binary_context_data)
 
 
 def add_version(parser):

@@ -16,7 +16,7 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
         Run mci_ipm_param_encode using real files
         """
         # create an ipm file
-        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as in_vbs:
+        with tempfile.NamedTemporaryFile(mode='wb') as in_vbs:
             with VbsWriter(in_vbs, blocked=True) as writer:
                 writer.write(b"Parameter message data")
             in_vbs.close()
