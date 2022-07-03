@@ -93,22 +93,13 @@ import logging
 import struct
 import typing
 
-from cardutil import iso8583, config
+from cardutil import iso8583, config, CardutilError
 
 LOGGER = logging.getLogger(__name__)
 
 
-class MciIpmDataError(ValueError):
-
-    record_number = None
-    binary_context_data = None
-
-    def __init__(self, *args, **kwargs):
-        super(MciIpmDataError, self).__init__(*args)
-        if kwargs.get('record_number'):
-            self.record_number = kwargs['record_number']
-        if kwargs.get('binary_context_data'):
-            self.binary_context_data = kwargs['binary_context_data']
+class MciIpmDataError(CardutilError):
+    pass
 
 
 class Block1014(object):
@@ -293,11 +284,15 @@ class VbsReader(object):
             raise StopIteration
 
         record = self.vbs_data.read(record_length)
-        # TODO ensure complete record has been read
+        if len(record) != record_length:
+            raise MciIpmDataError(f"Unable to read complete record - record length: {record_length}, "
+                                  f"data read: {len(record)}",
+                                  record_number=self.record_number,
+                                  binary_context_data=record_length_raw + record)
 
-        self.last_record = record  # save last record read
+        self.last_record = record_length_raw + record  # save last record read
         self.record_number += 1    # increment record counter
-        return record
+        return record  # get the full record including the record length
 
 
 class IpmReader(VbsReader):
@@ -339,9 +334,19 @@ class IpmReader(VbsReader):
         super(IpmReader, self).__init__(ipm_file, **kwargs)
 
     def __next__(self) -> dict:
+
         vbs_record = super(IpmReader, self).__next__()
         LOGGER.debug(f'{len(vbs_record)}: {vbs_record}')
-        return iso8583.loads(vbs_record, encoding=self.encoding, iso_config=self.iso_config)
+        try:
+            output = iso8583.loads(vbs_record, encoding=self.encoding, iso_config=self.iso_config)
+        except CardutilError as ex:
+            raise MciIpmDataError(
+                'Error while loading ISO8583 record',
+                binary_context_data=self.last_record,
+                record_number=self.record_number,
+                original_exception=ex
+            )
+        return output
 
 
 class IpmParamReader(VbsReader):

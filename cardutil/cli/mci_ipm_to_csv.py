@@ -3,9 +3,8 @@ import collections
 import csv
 import logging
 
-from cardutil.cli import add_version, get_config, print_banner, print_mciipm_data_error
+from cardutil.cli import add_version, get_config, print_banner, print_exception_details
 from cardutil.mciipm import IpmReader, MciIpmDataError
-from cardutil.vendor import hexdump
 
 
 def cli_entry():
@@ -28,7 +27,7 @@ def cli_run(**kwargs):
             with open(kwargs['out_filename'], 'w', encoding=kwargs.get('out_encoding')) as out_csv:
                 mci_ipm_to_csv(in_ipm=in_ipm, out_csv=out_csv, config=config, **kwargs)
     except MciIpmDataError as err:
-        print_mciipm_data_error(err)
+        print_exception_details(err)
         return -1
 
 

@@ -3,6 +3,7 @@ import datetime
 import decimal
 import unittest
 
+from cardutil import CardutilError
 from cardutil.config import config
 from cardutil.iso8583 import (
     BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
@@ -99,6 +100,22 @@ class Iso8583TestCase(unittest.TestCase):
             ({'DE1': decimal.Decimal('123.432')}, 20),
             _iso8583_to_field('1', {'field_type': 'FIXED', 'field_python_type': 'decimal', 'field_length': 20},
                               b'0000000000000123.432'))
+        # trigger decode error field length
+        with self.assertRaises(CardutilError):
+            _iso8583_to_field('1', {'field_type': 'LLVAR', 'field_length': 0}, b'\x00\x004564320012321122')
+        # unable to decode field length
+        with self.assertRaises(CardutilError):
+            _iso8583_to_field('01', {"field_type": "LLLVAR", "field_length": 255}, b'01\xff', encoding='ascii')
+        # invalid field length
+        with self.assertRaises(CardutilError):
+            _iso8583_to_field('01', {"field_type": "LLLVAR", "field_length": 255}, b'01X.', encoding='ascii')
+        # unable to decode field value
+        with self.assertRaises(CardutilError):
+            _iso8583_to_field('01', {"field_type": "LLLVAR", "field_length": 255}, b'001\xff', encoding='ascii')
+        # unable to convert to python value
+
+        with self.assertRaises(CardutilError):
+            _iso8583_to_field('1', {'field_type': 'LLVAR', 'field_python_type': 'int', 'field_length': 0}, b'04XXXX')
 
     def test_field_to_iso8583(self):
         self.assertEqual(b'164564320012321122', _field_to_iso8583({'field_type': 'LLVAR'}, "4564320012321122"))
@@ -152,8 +169,17 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual(ebcdic_dict, expected_dict)
 
         # check exception when full message not processed
-        with self.assertRaises(ValueError):
+        with self.assertRaises(CardutilError):
             _iso8583_to_dict(message_ascii_raw + b' ', config["bit_config"], "ascii")
+
+        # check exception when cannot unpack mti and bitmap (struct error)
+        with self.assertRaises(CardutilError):
+            _iso8583_to_dict(b'\x00TI0', config["bit_config"], "ascii")
+
+        # check exception when cannot decode MTI
+        with self.assertRaises(CardutilError):
+            _iso8583_to_dict(b'\xFFBCDFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.....', config["bit_config"],
+                             encoding="ascii", hex_bitmap=True)
 
     def test_dict_to_iso8583(self):
         source_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'PDS0001': '1', 'PDS9999': 'Z'}
@@ -209,7 +235,18 @@ class Iso8583TestCase(unittest.TestCase):
         print(_icc_to_dict(test_de55))
 
     def test_get_de43_fields(self):
+        # does not match
         self.assertEqual(_get_de43_fields('THIS DOES NOT MATCH REGEX'), {})
+        # matches regex
+        expected_dict = {'DE43_ADDRESS': '100 MAIN ST',
+                         'DE43_COUNTRY': 'AUS',
+                         'DE43_NAME': 'BOBS BURGERS',
+                         'DE43_POSTCODE': '4102',
+                         'DE43_STATE': 'QLD',
+                         'DE43_SUBURB': 'WOOLLOONGABBA'}
+        self.assertEqual(_get_de43_fields('BOBS BURGERS\\100 MAIN ST\\WOOLLOONGABBA\\4102 QLDAUS'), expected_dict)
+        processor_config = r'(?P<DE43_ALL>.*)'
+        self.assertEqual(_get_de43_fields('ALL FIELD', processor_config=processor_config), {'DE43_ALL': 'ALL FIELD'})
 
     def test_get_date_from_string_use_fromisodate(self):
         import builtins

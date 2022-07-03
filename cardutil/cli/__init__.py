@@ -3,8 +3,7 @@ import logging
 import os
 
 from cardutil.config import config as pkg_config
-from cardutil import __version__
-from cardutil.mciipm import MciIpmDataError
+from cardutil import __version__, CardutilError
 from cardutil.vendor.hexdump import hexdump
 
 LOGGER = logging.getLogger(__name__)
@@ -21,7 +20,7 @@ def print_banner(command_name, parms):
             print(f' -{parm_key}:{parms[parm_key]}')
 
 
-def print_mciipm_data_error(err: MciIpmDataError):
+def print_exception_details(err: CardutilError):
     print("*** ERROR - processing has stopped ***")
     if err.record_number:
         print(f'Error detected in record {err.record_number}')

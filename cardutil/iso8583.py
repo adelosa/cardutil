@@ -69,6 +69,7 @@ import re
 import struct
 import sys
 
+from cardutil import CardutilError
 from cardutil.BitArray import BitArray
 from cardutil.card import mask
 from cardutil.config import config
@@ -76,6 +77,10 @@ from cardutil.vendor.hexdump import hexdump
 
 LOGGER = logging.getLogger(__name__)
 DEFAULT_ENCODING = 'latin_1'
+
+
+class Iso8583DataError(CardutilError):
+    pass
 
 
 def dumps(obj: dict, encoding=None, iso_config=None, hex_bitmap=False):
@@ -137,6 +142,9 @@ def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
 
     * Message Type indicator - 4 bytes
     * Binary bitmap - 16 bytes (Reads DE1 and DE2)
+    OR if hex_bitmap = True
+    * Message Type indicator - 4 bytes
+    * Hex bitmap - 32 bytes (Reads DE1 and DE2)
     * Message data - Remainder of record
 
     :param bit_config: dictionary of bit mapping configuration
@@ -153,21 +161,26 @@ def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
     # split raw message into components MessageType(4B), Bitmap(16B),
     # Message(l=*)
 
-    if hex_bitmap:
-        message_length = len(message)-36
-        message_type_indicator, bitmap, message_data = struct.unpack(
-            "4s32s" + str(message_length) + "s", message)
-        binary_bitmap = binascii.unhexlify(bitmap)
+    try:
+        if hex_bitmap:
+            message_length = len(message)-36
+            message_type_indicator, bitmap, message_data = struct.unpack(
+                "4s32s" + str(message_length) + "s", message)
+            binary_bitmap = binascii.unhexlify(bitmap)
 
-    else:
-        message_length = len(message)-20
-        message_type_indicator, binary_bitmap, message_data = struct.unpack(
-            "4s16s" + str(message_length) + "s", message)
-
+        else:
+            message_length = len(message)-20
+            message_type_indicator, binary_bitmap, message_data = struct.unpack(
+                "4s16s" + str(message_length) + "s", message)
+    except struct.error as ex:
+        raise Iso8583DataError('Failed unpacking bitmap values', binary_context_data=message, original_exception=ex)
     return_values = dict()
 
     # add the message type
-    return_values["MTI"] = message_type_indicator.decode(encoding)
+    try:
+        return_values["MTI"] = message_type_indicator.decode(encoding)
+    except UnicodeError as ex:
+        raise Iso8583DataError('Failed decoding MTI field', binary_context_data=message, original_exception=ex)
 
     message_pointer = 0
     bitmap_list = _get_bitmap_list(binary_bitmap)
@@ -187,12 +200,10 @@ def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
 
     # check that all of message has been consumed, otherwise raise exception
     if message_pointer != len(message_data):
-        raise ValueError(
-            "Message data not correct length. Bitmap indicates len={0}, message is len={1}\n{2}".format(
-                message_pointer,
-                len(message_data),
-                hexdump(message_data, result="return")
-            )
+        raise Iso8583DataError(
+            f'Message data not correct length. '
+            f'Bitmap indicates len={message_pointer}, message is len={len(message_data)}',
+            binary_context_data=message
         )
 
     return return_values
@@ -284,8 +295,17 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
 
     if length_size > 0:
         field_length_string = message_data[:length_size]
-        field_length_string = field_length_string.decode(encoding)
-        field_length = int(field_length_string)
+        try:
+            field_length_string = field_length_string.decode(encoding)
+        except UnicodeDecodeError as ex:
+            raise Iso8583DataError(f'Unable to decode DE{bit} field length',
+                                   binary_context_data=message_data, original_exception=ex)
+
+        try:
+            field_length = int(field_length_string)
+        except ValueError as ex:
+            raise Iso8583DataError(f'Invalid field length DE{bit}',
+                                   binary_context_data=message_data, original_exception=ex)
 
     field_data = message_data[length_size:length_size + field_length]
     LOGGER.debug(f'field_data={field_data}')
@@ -293,7 +313,11 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
 
     # do ascii conversion except for ICC field
     if field_processor != 'ICC':
-        field_data = field_data.decode(encoding)
+        try:
+            field_data = field_data.decode(encoding)
+        except UnicodeDecodeError as ex:
+            raise Iso8583DataError(f'Unable to decode DE{bit} field value',
+                                   binary_context_data=message_data, original_exception=ex)
 
     # if field is PAN type, mask the card value
     if field_processor == 'PAN':
@@ -304,8 +328,11 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
         field_data = _pan_prefix(field_data)
 
     # do field conversion to native python type
-    field_data = _string_to_pytype(field_data, bit_config)
-
+    try:
+        field_data = _string_to_pytype(field_data, bit_config)
+    except ValueError as ex:
+        raise Iso8583DataError(f'Unable to convert DE{bit} field to python type',
+                               binary_context_data=message_data, original_exception=ex)
     return_values = dict()
 
     # add value to return dictionary
@@ -317,7 +344,8 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
 
     # if a DE43 field, break in down again and add to results
     if field_processor == 'DE43':
-        return_values.update(_get_de43_fields(field_data))
+        processor_config = bit_config.get('field_processor_config')
+        return_values.update(_get_de43_fields(field_data, processor_config))
 
     # if ICC field, break into tags
     if field_processor == 'ICC':
@@ -553,7 +581,7 @@ def _icc_to_dict(field_data):
     return return_values
 
 
-def _get_de43_fields(de43_field):
+def _get_de43_fields(de43_field, processor_config=None):
     """
     get pds 43 field breakdown
 
@@ -561,10 +589,13 @@ def _get_de43_fields(de43_field):
     :return: dictionary of pds 43 sub elements
     """
     LOGGER.debug("de43_field=%s", de43_field)
-    de43_regex = (
-        r"(?P<DE43_NAME>.+?) *\\(?P<DE43_ADDRESS>.+?) *\\(?P<DE43_SUBURB>.+?) *\\"
-        r"(?P<DE43_POSTCODE>\S{4,10}) *(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>.{3})"
-    )
+    if processor_config:
+        de43_regex = processor_config
+    else:
+        de43_regex = (
+            r"(?P<DE43_NAME>.+?) *\\(?P<DE43_ADDRESS>.+?) *\\(?P<DE43_SUBURB>.+?) *\\"
+            r"(?P<DE43_POSTCODE>\S{4,10}) *(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>.{3})"
+        )
 
     field_match = re.match(de43_regex, de43_field)
     if not field_match:

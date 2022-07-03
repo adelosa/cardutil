@@ -1,6 +1,7 @@
 import io
 import unittest
 
+from cardutil import CardutilError
 from cardutil.mciipm import (
     VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014, vbs_list_to_bytes,
     vbs_bytes_to_list, IpmParamReader, MciIpmDataError)
@@ -29,6 +30,18 @@ class MciIpmTestCase(unittest.TestCase):
             reader = IpmReader(in_data, blocked=True)
             results = list(reader)
         self.assertEqual(len(results), len(message_list))
+
+    def test_ipm_reader_iso8583_exception(self):
+        """
+        Test what happens when the iso8583 rec raises an exemption
+        """
+        # create the input ipm file bytes -- test_file
+        with io.BytesIO() as in_data:
+            with VbsWriter(in_data, blocked=True) as writer:
+                writer.write(b'bad ipm message')
+            reader = IpmReader(in_data, blocked=True)
+            with self.assertRaises(CardutilError):
+                list(reader)
 
     def test_real_message_example_ebcdic(self):
         # write 1014 blocked test file
@@ -160,11 +173,21 @@ class MciIpmTestCase(unittest.TestCase):
     def test_vbsreader_exceptions(self):
         # create the input file bytes -- test_file
         with io.BytesIO() as in_data:
-            in_data.write(b'\xFF\xFF\x00\x00')  # Only 3 bytes
+            in_data.write(b'\xFF\xFF\x00\x00')  # negative length
             print_stream(in_data, "VBS in data")
             reader = VbsReader(in_data)
             with self.assertRaises(MciIpmDataError):
                 list(reader)
+
+        with io.BytesIO() as in_data:
+            in_data.write(b'\x00\x00\x00\x05abcd')  # one byte short of record length (5)
+            print_stream(in_data, "VBS in data")
+            reader = VbsReader(in_data)
+            with self.assertRaises(MciIpmDataError) as context:
+                list(reader)
+            assert str(context.exception) == "Unable to read complete record - record length: 5, data read: 4"
+            assert context.exception.record_number == 1
+            assert context.exception.binary_context_data == b"\x00\x00\x00\x05abcd"
 
     def test_file_blocker_compare(self):
         """
@@ -219,14 +242,14 @@ class MciIpmTestCase(unittest.TestCase):
 
         out_blocked_missing_data.seek(0)
         out = io.BytesIO()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(CardutilError):
             unblock_1014(out_blocked_missing_data, out)
 
         # bad pad chars
         out_blocked_bad_fill = io.BytesIO(blocked[:-2] + b'$$')
         out_blocked_bad_fill.seek(0)
         out = io.BytesIO()
-        with self.assertRaises(ValueError):
+        with self.assertRaises(CardutilError):
             unblock_1014(out_blocked_bad_fill, out)
 
     def test_write_read_large_records(self):

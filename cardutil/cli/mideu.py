@@ -4,7 +4,7 @@ import csv
 import logging
 
 from cardutil import __version__
-from cardutil.cli import get_config, print_banner, print_mciipm_data_error
+from cardutil.cli import get_config, print_banner, print_exception_details
 from cardutil.mciipm import IpmReader, IpmWriter, MciIpmDataError
 
 
@@ -29,13 +29,7 @@ def cli_run(**kwargs):
     try:
         kwargs['func'](config=config, **kwargs)
     except MciIpmDataError as err:
-        print_mciipm_data_error(err)
-        # print("*** ERROR - processing has stopped ***")
-        # if err.record_number:
-        #     print(f'Error detected in record {err.record_number}')
-        # print(err)
-        # if err.binary_context_data:
-        #     hexdump.hexdump(err.binary_context_data)
+        print_exception_details(err)
         return -1
 
 

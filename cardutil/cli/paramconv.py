@@ -2,7 +2,7 @@ import argparse
 import logging
 
 from cardutil import __version__
-from cardutil.cli import print_banner, print_mciipm_data_error
+from cardutil.cli import print_banner, print_exception_details
 from cardutil.cli.mideu import add_logging_arg_group, add_source_format_arg
 from cardutil.mciipm import MciIpmDataError, VbsReader, VbsWriter
 
@@ -40,13 +40,7 @@ def cli_run(**kwargs):
                 in_file, out_file=out_file, blocked=blocked,
                 in_encoding=in_encoding, out_encoding=out_encoding)
     except MciIpmDataError as err:
-        print_mciipm_data_error(err)
-        # print("*** ERROR - processing has stopped ***")
-        # if err.record_number:
-        #     print(f'Error detected in record {err.record_number}')
-        # print(err)
-        # if err.binary_context_data:
-        #     hexdump(err.binary_context_data)
+        print_exception_details(err)
         return -1
 
     print("Done!")

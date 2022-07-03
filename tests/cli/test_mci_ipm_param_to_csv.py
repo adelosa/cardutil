@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 
+from cardutil import CardutilError
 from cardutil.mciipm import VbsWriter
 from cardutil.cli import mci_ipm_param_to_csv
 from cardutil.config import config
@@ -107,7 +108,7 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
 
     def test_extract_ip0040t1_no_table_config(self):
         with io.BytesIO() as test_param_stream, io.StringIO() as test_csv_stream:
-            with self.assertRaises(ValueError):
+            with self.assertRaises(CardutilError):
                 mci_ipm_param_to_csv.mci_ipm_param_to_csv(
                     test_param_stream, test_csv_stream, config=MCI_PARAMETER_CONFIG, table_id='BADTABLE')
 
@@ -121,7 +122,7 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
                 test_param_vbs.write_many(param_file_data)
 
             test_param_stream.seek(0)
-            with self.assertRaises(ValueError):
+            with self.assertRaises(CardutilError):
                 mci_ipm_param_to_csv.mci_ipm_param_to_csv(
                     test_param_stream, test_csv_stream, config=MCI_PARAMETER_CONFIG, table_id='IP0040T1')
 

@@ -2,7 +2,7 @@ import unittest
 import io
 import contextlib
 
-from cardutil.cli import print_banner, print_mciipm_data_error
+from cardutil.cli import print_banner, print_exception_details
 from cardutil.mciipm import MciIpmDataError
 
 
@@ -21,6 +21,6 @@ class GetConfigTestCase(unittest.TestCase):
 
     def test_print_mciipmdataerror(self):
         ex = MciIpmDataError("A data error", record_number=1, binary_context_data=b'1234')
-        print_mciipm_data_error(ex)
+        print_exception_details(ex)
         ex = MciIpmDataError("A data error")  # plain error
-        print_mciipm_data_error(ex)
+        print_exception_details(ex)
