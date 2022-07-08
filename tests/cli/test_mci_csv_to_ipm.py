@@ -17,7 +17,7 @@ class MciCsvToIpmParserTestCase(unittest.TestCase):
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'in_encoding': None, 'out_filename': None, 'out_encoding': None,
-             'no1014blocking': False, 'config_file': None})
+             'no1014blocking': False, 'config_file': None, 'debug': False})
 
 
 class MciCsvToIpmIOTestCase(unittest.TestCase):
@@ -112,6 +112,12 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         recs = self.run_cli_with_csv(in_csv_data, out_filename=out_file.name)
         print(recs)
 
+    def test_csv_to_ipm_with_debug(self):
+        in_csv_data = 'MTI,DE2,DE4\n0100,1111222233334444,100'
+        out_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        recs = self.run_cli_with_csv(in_csv_data, out_filename=out_file.name, debug=True)
+        print(recs)
+
     def test_csv_to_ipm_has_DE48_only(self):
         """
         Run mci_csv_to_ipm test with DE48 only
@@ -124,7 +130,7 @@ class MciCsvToIpmTestCase(unittest.TestCase):
                        '122001T,,,,00000001,,,,,,,,,')
 
         # run the conversion
-        recs = self.run_cli_with_csv(in_csv_data, out_encoding='latin1')
+        recs = self.run_cli_with_csv(in_csv_data, out_encoding='latin1', debug=True)
         # perform the checks
         self.assertEqual(len(recs), 1)  # one record returned
         rec = recs[0]

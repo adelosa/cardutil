@@ -1,5 +1,6 @@
 import argparse
 import csv
+import logging
 
 from cardutil.cli import add_version, get_config, print_banner
 from cardutil import mciipm
@@ -11,6 +12,10 @@ def cli_entry():
 
 def cli_run(**kwargs):
     print_banner('mci_ipm_param_to_csv', kwargs)
+
+    if kwargs.get('debug'):
+        logging.basicConfig(level=logging.DEBUG)
+
     config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
     param_config = config.get('mci_parameter_tables')
 
@@ -29,6 +34,7 @@ def cli_parser():
     parser.add_argument('-o', '--out-filename')
     parser.add_argument('--in-encoding')
     parser.add_argument('--out-encoding')
+    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--no1014blocking', action='store_true')
     parser.add_argument('--config-file', help='File containing cardutil configuration - JSON format')
     add_version(parser)

@@ -14,10 +14,11 @@ def cli_entry():
 def cli_run(**kwargs):
 
     print_banner('mci_ipm_to_csv', kwargs)
-    config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
 
     if kwargs.get('debug'):
         logging.basicConfig(level=logging.DEBUG)
+
+    config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
 
     if not kwargs.get('out_filename'):
         kwargs['out_filename'] = kwargs['in_filename'] + '.csv'
@@ -66,9 +67,9 @@ def cli_parser():
     parser.add_argument('-o', '--out-filename')
     parser.add_argument('--in-encoding')
     parser.add_argument('--out-encoding')
-    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--no1014blocking', action='store_true')
     parser.add_argument('--config-file', help='File containing cardutil configuration - JSON format')
+    parser.add_argument('--debug', action='store_true')
     add_version(parser)
 
     return parser

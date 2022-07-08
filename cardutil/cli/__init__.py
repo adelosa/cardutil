@@ -10,9 +10,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def print_banner(command_name, parms):
-    message = (f'{command_name} -- cardutil version {__version__}\n'
-               f'(C)Copyright 2019-2022 Anthony Delosa\n'
-               f'See https://github.com/adelosa/cardutil')
+    message = f'{command_name} (cardutil {__version__})'
     print(message)
     print('parameters:')
     for parm_key in parms:
@@ -30,7 +28,10 @@ def print_exception_details(err: CardutilError):
 
 
 def add_version(parser):
-    parser.add_argument('--version', action='version', version=f'%(prog)s (cardutil {__version__})')
+    version_text = (f'%(prog)s (cardutil {__version__})\n'
+                    f'(C)Copyright 2019-2022 Anthony Delosa\n')
+
+    parser.add_argument('--version', action='version', version=version_text)
 
 
 def get_config(config_filename, envvar='CARDUTIL_CONFIG', cli_filename=None):

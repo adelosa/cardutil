@@ -47,7 +47,7 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': None,
              'out_encoding': None, 'no1014blocking': False,
-             'in_format': '1014', 'out_format': '1014'})
+             'in_format': '1014', 'out_format': '1014', 'debug': False})
 
     def test_mci_ipm_param_encode_input_params_variations(self):
         """
@@ -63,7 +63,7 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
         output_file_name = in_vbs_name + '.out'
 
         # run with just input filename
-        mci_ipm_param_encode.cli_run(in_filename=in_vbs_name)
+        mci_ipm_param_encode.cli_run(in_filename=in_vbs_name, debug=True)
         with open(in_vbs_name + '.out', 'rb') as output_file:
             hexdump(output_file.read())
             print('*'*20)

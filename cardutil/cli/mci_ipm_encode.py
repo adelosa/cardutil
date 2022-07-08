@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from cardutil.cli import add_version, print_banner
 from cardutil.mciipm import IpmReader, IpmWriter
@@ -10,6 +11,10 @@ def cli_entry():
 
 def cli_run(**kwargs):
     print_banner('mci_ipm_encode', kwargs)
+
+    if kwargs.get('debug'):
+        logging.basicConfig(level=logging.DEBUG)
+
     if not kwargs.get('out_filename'):
         kwargs['out_filename'] = kwargs['in_filename'] + '.out'
 
@@ -30,6 +35,7 @@ def cli_parser():
     parser.add_argument('--no1014blocking', action='store_true')
     parser.add_argument('--in-format', choices=['vbs', '1014'], default='1014')
     parser.add_argument('--out-format', choices=['vbs', '1014'], default='1014')
+    parser.add_argument('--debug', action='store_true')
     add_version(parser)
     return parser
 

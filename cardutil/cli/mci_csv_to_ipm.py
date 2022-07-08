@@ -1,4 +1,5 @@
 import argparse
+import logging
 from csv import DictReader
 
 from cardutil.cli import add_version, get_config, print_banner
@@ -11,6 +12,10 @@ def cli_entry():
 
 def cli_run(**kwargs):
     print_banner('mci_csv_to_ipm', kwargs)
+
+    if kwargs.get('debug'):
+        logging.basicConfig(level=logging.DEBUG)
+
     config = get_config('cardutil.json', cli_filename=kwargs.get('config_file'))
 
     if not kwargs.get('out_filename'):
@@ -29,6 +34,7 @@ def cli_parser():
     parser.add_argument('--out-encoding')
     parser.add_argument('--no1014blocking', action='store_true')
     parser.add_argument('--config-file', help='File containing cardutil configuration - JSON format')
+    parser.add_argument('--debug', action='store_true')
     add_version(parser)
 
     return parser

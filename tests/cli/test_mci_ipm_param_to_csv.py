@@ -17,7 +17,7 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': None, 'table_id': 'IP0000T1',
-             'out_encoding': None, 'no1014blocking': False, 'config_file': None})
+             'out_encoding': None, 'no1014blocking': False, 'config_file': None, 'debug': False})
 
     def test_ipm_to_csv_input_params(self):
         """
@@ -42,6 +42,7 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
         mci_ipm_param_to_csv.cli_run(table_id='IP0040T1', in_filename=in_file_name)
         mci_ipm_param_to_csv.cli_run(table_id='IP0040T1', in_filename=in_file_name, in_encoding='latin_1')
         mci_ipm_param_to_csv.cli_run(table_id='IP0040T1', in_filename=in_file_name, out_filename=in_file_name + 'xxx')
+        mci_ipm_param_to_csv.cli_run(table_id='IP0040T1', in_filename=in_file_name, debug=True)
         os.remove(in_file_name)
         os.remove(in_file_name + '_IP0040T1.csv')
         os.remove(in_file_name + 'xxx')
