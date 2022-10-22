@@ -209,6 +209,17 @@ config = {
             "alm_activation_date": {"start": 95, "end": 101},
             "cardholder_billing_currency_default": {"start": 101, "end": 104},
             "cardholder_billing_currency_default_exponent": {"start": 104, "end": 105},
+            "cardholder_bill_primary_currency": {"start": 105, "end": 133},
+            "chip_to_magstripe_conversion_service_indicator": {"start": 133, "end": 134},
+            "floor_exp_date": {"start": 134, "end": 140},
+            "co_brand_participation_switch": {"start": 140, "end": 141},
+            "spend_control_switch": {"start": 141, "end": 142},
+            "merchant_cleansing_service_participation": {"start": 142, "end": 145},
+            "merchant_cleansing_activation_date": {"start": 145, "end": 151},
+            "paypass_enabled_indicator": {"start": 151, "end": 152},
+            "rate_type_indicator": {"start": 152, "end": 153},
+            "psn_route_indicator": {"start": 153, "end": 154},
+            "cash_back_wo_purchase_ind": {"start": 154, "end": 155}
         },
         "IP0075T1": {
             "mcc_code": {"start": 12, "end": 16},

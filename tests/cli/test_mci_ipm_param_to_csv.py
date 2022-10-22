@@ -54,6 +54,7 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
             b'TRAILER RECORD IP0000T1  00000218                                               ',
             b'........xxx....',  # dummy record
             b'1711114A0365116545113000000000MCC5116545113999999999MCC020000000152710084563AUS036CMCC NNYMCC N0000000362'
+            b'0000000000000000000000000001 000000NY   000000NNNN',
             b'0000000000000000000000000000 000000NN   000000NNNN0NUNN0N N     ',
         ]
 
@@ -76,7 +77,8 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
 
         # check the record extracted
         self.assertEqual(csv_records[1], '711114,A,036,5116545113000000000,MCC,5116545113999999999,MCC,02,00000001527,'
-                                         '1,0084563,AUS,036,C,MCC, ,N,N,Y,MCC, ,N,000000,036,2')
+                                         '1,0084563,AUS,036,C,MCC, ,N,N,Y,MCC, ,N,000000,036,2,'
+                                         '0000000000000000000000000001, ,000000,N,Y,   ,000000,N,N,N,N')
 
     def test_extract_ip0040t1_no_records(self):
         param_file_data = [
