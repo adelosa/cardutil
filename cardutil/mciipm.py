@@ -414,7 +414,7 @@ class IpmParamReader(VbsReader):
             if record.startswith('TRAILER RECORD IP0000T1'):
                 trailer_record_found = True
                 break
-        print(self.table_index)
+        LOGGER.debug('IP0000T1 records: {}'.format(self.table_index))
         if not trailer_record_found:
             raise MciIpmDataError('parameter file missing IP0000T1 trailer record')
 
