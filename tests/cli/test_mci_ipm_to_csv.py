@@ -76,7 +76,8 @@ class MciIpmToCsvTestCase(unittest.TestCase):
                 debug=True
             )
             os.remove(config_filename)
-        csv_output = open(in_ipm_name + '.csv', 'r').read()
+        with open(in_ipm_name + '.csv', 'r') as csv_data:
+            csv_output = csv_data.read()
         self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
 
         os.remove(in_ipm_name)
