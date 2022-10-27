@@ -20,8 +20,8 @@ command line tools for working with Mastercard IPM files.
         :target: https://pypi.org/project/cardutil
         :alt: Implementation
 
-.. image:: https://img.shields.io/pypi/status/cardutil.svg
-        :target: https://pypi.org/project/cardutil
+.. image:: https://img.shields.io/github/issues/adelosa/cardutil
+        :target: https://github.com/adelosa/cardutil/issues
         :alt: Status
 
 .. image:: https://img.shields.io/pypi/dm/cardutil.svg
