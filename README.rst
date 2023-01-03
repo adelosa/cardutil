@@ -54,7 +54,7 @@ Install and update using pip::
 
 Information
 ===========
-* Supports python 3.6 and later.
+* Supports python 3.7 and later.
 * Pythonic programmer interfaces
 * Core library has **zero** package dependencies.
 * Low memory usage
