@@ -589,21 +589,21 @@ def _get_de43_fields(de43_field, processor_config=None):
     :return: dictionary of pds 43 sub elements
     """
     LOGGER.debug("de43_field=%s", de43_field)
-    if processor_config:
-        de43_regex = processor_config
-    else:
-        de43_regex = (
-            r"(?P<DE43_NAME>.+?) *\\(?P<DE43_ADDRESS>.+?) *\\(?P<DE43_SUBURB>.+?) *\\"
-            r"(?P<DE43_POSTCODE>\S{4,10}) *(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>.{3})"
-        )
 
+    # No field config provided, just exit
+    if not processor_config:
+        return dict()
+
+    # perform regex field matching
+    de43_regex = processor_config
     field_match = re.match(de43_regex, de43_field)
     if not field_match:
         return dict()
 
     # get the dict
     field_dict = field_match.groupdict()
-
+    if field_dict.get('DE43_POSTCODE'):
+        field_dict['DE43_POSTCODE'] = field_dict['DE43_POSTCODE'].rstrip()
     return field_dict
 
 

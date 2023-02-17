@@ -143,7 +143,7 @@ config = {
         "43": {"field_name": "Card acceptor name/location", "field_type": "LLVAR", "field_length": 0,
                "field_processor": "DE43",
                "field_processor_config": r"(?P<DE43_NAME>.+?) *\\(?P<DE43_ADDRESS>.+?) *\\(?P<DE43_SUBURB>.+?) *\\"
-                                         r"(?P<DE43_POSTCODE>\S{4,10}) *(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>.{3})"},
+                                         r"(?P<DE43_POSTCODE>.{10})(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>\S{3})$"},
         "48": {"field_name": "Additional data", "field_type": "LLLVAR", "field_length": 0, "field_processor": "PDS"},
         "49": {"field_name": "Currency code, Transaction", "field_type": "FIXED", "field_length": 3},
         "50": {"field_name": "Currency code, Reconciliation", "field_type": "FIXED", "field_length": 3},

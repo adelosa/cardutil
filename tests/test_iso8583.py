@@ -157,7 +157,7 @@ class Iso8583TestCase(unittest.TestCase):
                          'DE12': datetime.datetime(2015, 8, 15, 17, 15, 0),
                          'DE22': '123456789012', 'DE24': '333', 'DE26': 1234,
                          'DE31': '57995799120000001230612', 'DE33': '123456', 'DE38': '123456',
-                         'DE42': '579942111111111', 'DE43': 'BIG BOBS\\80 KERNDALE ST\\DANERLEY\\3103  VICAUS',
+                         'DE42': '579942111111111', 'DE43': 'BIG BOBS\\80 KERNDALE ST\\DANERLEY\\3103      VICAUS',
                          'DE43_NAME': 'BIG BOBS', 'DE43_ADDRESS': '80 KERNDALE ST', 'DE43_SUBURB': 'DANERLEY',
                          'DE43_POSTCODE': '3103', 'DE43_STATE': 'VIC', 'DE43_COUNTRY': 'AUS',
                          'DE48': '0001001Y', 'PDS0001': 'Y', 'DE49': '999', 'DE63': '0000000000000001',
@@ -235,8 +235,9 @@ class Iso8583TestCase(unittest.TestCase):
         print(_icc_to_dict(test_de55))
 
     def test_get_de43_fields(self):
+        default_processor_config = config['bit_config']['43'].get('field_processor_config')
         # does not match
-        self.assertEqual(_get_de43_fields('THIS DOES NOT MATCH REGEX'), {})
+        self.assertEqual(_get_de43_fields('THIS DOES NOT MATCH REGEX', default_processor_config), {})
         # matches regex
         expected_dict = {'DE43_ADDRESS': '100 MAIN ST',
                          'DE43_COUNTRY': 'AUS',
@@ -244,9 +245,26 @@ class Iso8583TestCase(unittest.TestCase):
                          'DE43_POSTCODE': '4102',
                          'DE43_STATE': 'QLD',
                          'DE43_SUBURB': 'WOOLLOONGABBA'}
-        self.assertEqual(_get_de43_fields('BOBS BURGERS\\100 MAIN ST\\WOOLLOONGABBA\\4102 QLDAUS'), expected_dict)
-        processor_config = r'(?P<DE43_ALL>.*)'
-        self.assertEqual(_get_de43_fields('ALL FIELD', processor_config=processor_config), {'DE43_ALL': 'ALL FIELD'})
+        self.assertEqual(
+            _get_de43_fields(
+                'BOBS BURGERS\\100 MAIN ST\\WOOLLOONGABBA\\4102      QLDAUS', default_processor_config), expected_dict)
+        custom_processor_config = r'(?P<DE43_ALL>.*)'
+        self.assertEqual(
+            _get_de43_fields('ALL FIELD', processor_config=custom_processor_config), {'DE43_ALL': 'ALL FIELD'})
+
+    def test_get_de43_fields_international_addresses(self):
+        default_processor_config = config['bit_config']['43'].get('field_processor_config')
+        # United Kingdom
+        de43_gbr = _get_de43_fields('The king\\Buckingham Palace\\LONDON\\SW1A 1AA     GBR', default_processor_config)
+        self.assertEqual(de43_gbr['DE43_POSTCODE'], 'SW1A 1AA')
+        self.assertEqual(de43_gbr['DE43_STATE'], '   ')
+        self.assertEqual(de43_gbr['DE43_COUNTRY'], 'GBR')
+
+        # Ireland
+        de43_irl = _get_de43_fields('Guinness\\St James Gate\\DUBLIN\\D08 VF8H     IRL', default_processor_config)
+        self.assertEqual(de43_irl['DE43_POSTCODE'], 'D08 VF8H')
+        self.assertEqual(de43_irl['DE43_STATE'], '   ')
+        self.assertEqual(de43_irl['DE43_COUNTRY'], 'IRL')
 
     def test_get_date_from_string_use_fromisodate(self):
         import builtins
