@@ -179,6 +179,25 @@ class MciCsvToIpmTestCase(unittest.TestCase):
         # de48 contains all PDS values passed
         self.assertEqual(rec['DE48'], '0122001T01910012')
 
+    def test_csv_to_ipm_exclude_empty(self):
+        """
+        Run mci_csv_to_ipm test with empty fields
+        Check that only provided fields are loaded
+        :return:
+        """
+        in_csv_data = ('MTI,DE2,DE3,DE4,DE12,DE14,DE22,'
+                       'PDS0191,PDS0122\n'
+                       '1644,123,1,,,,,123,')
+        # run the conversion
+        recs = self.run_cli_with_csv(in_csv_data, out_encoding='latin1')
+        # perform the checks
+        self.assertEqual(len(recs), 1)  # one record returned
+        rec = recs[0]
+        print(rec)
+        # de48 contains only PDS fields with values
+        expected_dict = {'MTI': '1644', 'DE2': '123', 'DE3': '1     ', 'DE48': '0191003123', 'PDS0191': '123'}
+        self.assertDictEqual(rec, expected_dict)
+
 
 if __name__ == '__main__':
     unittest.main()

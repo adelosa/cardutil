@@ -54,7 +54,9 @@ def mci_csv_to_ipm(in_csv, out_ipm, config, out_encoding=None, no1014blocking=Fa
     blocked = not no1014blocking
     with IpmWriter(out_ipm, encoding=out_encoding, blocked=blocked, iso_config=config.get('bit_config')) as writer:
         reader = DictReader(in_csv)
-        writer.write_many(reader)
+        for row in reader:
+            record = {k: v for k, v in row.items() if v}
+            writer.write(record)
 
 
 if __name__ == '__main__':
