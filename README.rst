@@ -64,7 +64,7 @@ Information
 * Core library has **zero** package dependencies.
 * Low memory usage
 * Download from `pypi <https://pypi.org/project/cardutil/>`_
-* Documentation available at `Read The Docs <https://cardutil.readthedocs.io/en/latest/>`_ and `GitHub <https://adelosa.github.io/cardutil>`_
+* Documentation available at `Read The Docs <https://cardutil.readthedocs.io/en/latest/>`_ and `GitHub Pages <https://adelosa.github.io/cardutil>`_
 * Source hosted at `GitHub <https://github.com/adelosa/cardutil>`_
 
 Acknowledgements
