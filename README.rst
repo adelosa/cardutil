@@ -32,9 +32,14 @@ command line tools for working with Mastercard IPM files.
         :target: https://pypi.org/project/cardutil
         :alt: Python versions
 
-.. image:: https://readthedocs.org/projects/cardutil/badge/?version=latest
-        :target: https://cardutil.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
+.. image:: https://img.shields.io/github/actions/workflow/status/adelosa/cardutil/docs.yml?event=push&label=doc%20build
+        :target: https://adelosa.github.io/cardutil
+        :alt: doc build
+
+.. image:: https://snyk.io/advisor/python/cardutil/badge.svg
+        :target: https://snyk.io/advisor/python/cardutil
+        :alt: snyk package health
+
 
 Features
 ========
@@ -59,7 +64,7 @@ Information
 * Core library has **zero** package dependencies.
 * Low memory usage
 * Download from `pypi <https://pypi.org/project/cardutil/>`_
-* Documentation available at  `readthedocs <https://cardutil.readthedocs.io/en/latest/>`_
+* Documentation available at `Read The Docs <https://cardutil.readthedocs.io/en/latest/>`_ and `GitHub <https://adelosa.github.io/cardutil>`_
 * Source hosted at `GitHub <https://github.com/adelosa/cardutil>`_
 
 Acknowledgements
