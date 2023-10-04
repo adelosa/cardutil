@@ -23,13 +23,15 @@ def print_exception_details(err: CardutilError):
     if err.record_number:
         print(f'Error detected in record {err.record_number}')
     print(err)
+    if err.ex:  # another exception caused this, so print details
+        print(err.ex)
     if err.binary_context_data:
         hexdump(err.binary_context_data)
 
 
 def add_version(parser):
     version_text = (f'%(prog)s (cardutil {__version__})\n'
-                    f'(C)Copyright 2019-2022 Anthony Delosa\n')
+                    f'(C)Copyright 2019-2023 Anthony Delosa\n')
 
     parser.add_argument('--version', action='version', version=version_text)
 
