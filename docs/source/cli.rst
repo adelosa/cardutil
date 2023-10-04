@@ -11,6 +11,8 @@ mastercard ipm tools
 ------------------
 Converts Mastercard IPM files to csv format
 
+Default input file encoding is ``latin-1``. See `Python encodings <https://docs.python.org/3/library/codecs.html#standard-encodings>`_ for other options.
+
 .. note::
    Fields defined as datetime in the ISO8583 config will be rendered in the CSV as ISO 8601 calendar date format.
 
