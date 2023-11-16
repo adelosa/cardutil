@@ -266,6 +266,7 @@ def _dict_to_iso8583(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
 def _field_to_iso8583(bit_config, field_value, encoding=DEFAULT_ENCODING):
 
     output = ''
+    LOGGER.debug(f'bit_config={bit_config}, field_value={field_value}, encoding={encoding}')
     field_value = _pytype_to_string(field_value, bit_config)
     field_length = bit_config.get('field_length')
     length_size = _get_field_length(bit_config)  # size of length for llvar and lllvar fields
@@ -414,18 +415,18 @@ def _get_date_from_string(field_data: str) -> datetime:
     """
     try:
         import dateutil.parser as parser
-        print('Using dateutil parser')
+        LOGGER.debug('Using dateutil parser')
         return parser.parse(field_data)
     except ImportError:
         pass
 
     if sys.version_info >= (3, 7):
-        print('Using fromisoformat')
+        LOGGER.debug('Using fromisoformat')
         return datetime.datetime.fromisoformat(field_data)
 
     # fallback parser -- tries a few different formats until one works
-    print('Using built in date parser')
-    date_formats = ["%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"]
+    LOGGER.debug('Using built in date parser')
+    date_formats = ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d")
     output_date = None
     for date_format in date_formats:
         try:
