@@ -1,6 +1,7 @@
 import argparse
 import logging
 
+import cardutil.config
 from cardutil.cli import add_version, print_banner
 from cardutil.mciipm import IpmReader, IpmWriter
 
@@ -40,6 +41,19 @@ def cli_parser():
     return parser
 
 
+def get_config():
+    """
+    when doing dict to iso conversion, PDS fields generation should be removed.
+    This function takes the standard config and removes any PDS field processors
+    """
+    config = cardutil.config.config
+    bit_config = config['bit_config']
+    for field, field_config in bit_config.items():
+        if field_config.get("field_processor") == 'PDS':
+            del field_config['field_processor']
+    return bit_config
+
+
 def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='latin_1',
                    in_format='1014', out_format='1014', **_):
     """
@@ -57,7 +71,7 @@ def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='la
     in_blocked = True if in_format == '1014' else False
     with IpmWriter(out_file, encoding=out_encoding, blocked=in_blocked) as writer:
         out_blocked = True if out_format == '1014' else False
-        reader = IpmReader(in_file, encoding=in_encoding, blocked=out_blocked)
+        reader = IpmReader(in_file, encoding=in_encoding, blocked=out_blocked, iso_config=get_config())
         writer.write_many(reader)
 
 

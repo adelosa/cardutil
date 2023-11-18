@@ -2,6 +2,7 @@ import io
 import os
 import tempfile
 import unittest
+
 from tests import message_ascii_raw, print_stream
 
 from cardutil.mciipm import VbsWriter
@@ -56,3 +57,15 @@ class MciIpmEncodeTestCase(unittest.TestCase):
         mci_ipm_encode.cli_run(in_filename=in_ipm_name, debug=True)
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.out')
+
+    def test_get_config_removes_pds_field_processors(self):
+        """
+        Ensure no field process
+        """
+        bit_config = mci_ipm_encode.get_config()
+        print(bit_config)
+        for bit_config_item in bit_config.values():
+            print(bit_config_item)
+            if bit_config_item.get('field_processor'):
+                print(bit_config_item['field_processor'])
+                self.assertIsNot('PDS', bit_config_item['field_processor'])
