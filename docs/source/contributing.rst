@@ -68,6 +68,11 @@ unit test
 
     $ pytest
 
+If you want to run with debug messages displayed::
+
+    $ pytest --log-cli-level=10
+
+
 coverage
 --------
 

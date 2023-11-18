@@ -265,16 +265,22 @@ def _dict_to_iso8583(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
 
 def _field_to_iso8583(bit_config, field_value, encoding=DEFAULT_ENCODING):
 
-    output = ''
+    output = b''
     LOGGER.debug(f'bit_config={bit_config}, field_value={field_value}, encoding={encoding}')
     field_value = _pytype_to_string(field_value, bit_config)
     field_length = bit_config.get('field_length')
     length_size = _get_field_length(bit_config)  # size of length for llvar and lllvar fields
+
     if length_size > 0:
         field_length = len(field_value)
-        output += format(field_length, '0' + str(length_size))
-    output += format(field_value[:field_length], '<' + str(field_length))
-    return output.encode(encoding)
+        output += format(field_length, '0' + str(length_size)).encode(encoding)
+
+    if isinstance(field_value, bytes):
+        output += field_value[:field_length]
+    else:
+        output += format(field_value[:field_length], '<' + str(field_length)).encode(encoding)
+
+    return output
 
 
 def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):

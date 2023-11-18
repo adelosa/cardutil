@@ -87,6 +87,8 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         """
         Actually run using real files, and exception generated
         Triggered through negative RDW on second record -- invalid record length
+        KNOWN ISSUE: when pytest run with logging, this test will fail.
+        TODO Fix so this test works with pytest debug on
         :return:
         """
         in_ipm_data = (b'\x00\x00\x00\x1a0100\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'

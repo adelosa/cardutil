@@ -152,6 +152,18 @@ class Iso8583TestCase(unittest.TestCase):
                  'field_length': 12, "field_date_format": "%y%m%d%H%M%S"},
                 datetime.datetime(2014, 1, 2, 15, 16, 10)))
 
+    def test_field_to_iso8583_binary_field(self):
+        """
+        https://github.com/adelosa/cardutil/issues/15
+        Ensure function can support processing of byte values representing binary fields like DE55
+        """
+        bit_config = {
+            'field_name': 'binary field', 'field_type': 'LLLVAR', 'field_length': 255}
+        field_value = b'\x01\x01\x41\x9f\x01\x02\x12\x34'
+        encoding = 'latin_1'
+        field_output = _field_to_iso8583(bit_config, field_value, encoding)
+        self.assertEqual(b'008\x01\x01A\x9f\x01\x02\x124', field_output)
+
     def test_iso8583_to_dict(self):
         expected_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'DE4': 9999,
                          'DE12': datetime.datetime(2015, 8, 15, 17, 15, 0),
