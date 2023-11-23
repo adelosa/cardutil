@@ -69,9 +69,9 @@ def mci_ipm_encode(in_file, out_file=None, in_encoding='cp500', out_encoding='la
     """
 
     in_blocked = True if in_format == '1014' else False
-    with IpmWriter(out_file, encoding=out_encoding, blocked=in_blocked) as writer:
-        out_blocked = True if out_format == '1014' else False
-        reader = IpmReader(in_file, encoding=in_encoding, blocked=out_blocked, iso_config=get_config())
+    out_blocked = True if out_format == '1014' else False
+    with IpmWriter(out_file, encoding=out_encoding, blocked=out_blocked) as writer:
+        reader = IpmReader(in_file, encoding=in_encoding, blocked=in_blocked, iso_config=get_config())
         writer.write_many(reader)
 
 
