@@ -277,7 +277,7 @@ class VbsReader(object):
         if record_length < 0 or record_length > 3000:
             raise MciIpmDataError(f"Invalid record length - value read was {record_length}",
                                   record_number=self.record_number,
-                                  binary_context_data=self.last_record)
+                                  binary_context_data=record_length_raw)
 
         # exit if last record (length=0)
         if record_length == 0:
@@ -341,7 +341,7 @@ class IpmReader(VbsReader):
             output = iso8583.loads(vbs_record, encoding=self.encoding, iso_config=self.iso_config)
         except CardutilError as ex:
             raise MciIpmDataError(
-                'Error while loading ISO8583 record',
+                'Error while processing ISO8583 record',
                 binary_context_data=self.last_record,
                 record_number=self.record_number,
                 original_exception=ex

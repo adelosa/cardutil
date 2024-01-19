@@ -107,7 +107,7 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
         print(output)
-        assert len(output) == 9
+        assert len(output) == 8
         assert output[4] == '*** ERROR - processing has stopped ***'
 
 

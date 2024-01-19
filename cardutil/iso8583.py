@@ -188,6 +188,13 @@ def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
     for bit in range(2, 128):
         if bitmap_list[bit]:
             LOGGER.debug("processing bit %s", bit)
+            # Check that config is available for this bit
+            if not bit_config.get(str(bit)):
+                raise Iso8583DataError(
+                    f'No bit config available for bit {bit}',
+                    binary_context_data=message
+                )
+
             return_message, message_increment = _iso8583_to_field(
                 bit,
                 bit_config[str(bit)],

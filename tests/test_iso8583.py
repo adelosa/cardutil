@@ -193,6 +193,10 @@ class Iso8583TestCase(unittest.TestCase):
             _iso8583_to_dict(b'\xFFBCDFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF.....', config["bit_config"],
                              encoding="ascii", hex_bitmap=True)
 
+        # check exception when bit config not found
+        with self.assertRaises(CardutilError):
+            _iso8583_to_dict(message_ascii_raw, {}, "ascii")
+
     def test_dict_to_iso8583(self):
         source_dict = {'MTI': '1144', 'DE2': '4444555544445555', 'DE3': '111111', 'PDS0001': '1', 'PDS9999': 'Z'}
         actual_iso = _dict_to_iso8583(source_dict, config['bit_config'])
@@ -263,6 +267,9 @@ class Iso8583TestCase(unittest.TestCase):
         custom_processor_config = r'(?P<DE43_ALL>.*)'
         self.assertEqual(
             _get_de43_fields('ALL FIELD', processor_config=custom_processor_config), {'DE43_ALL': 'ALL FIELD'})
+
+        self.assertEqual(
+            _get_de43_fields('SOME DATA', None), {})
 
     def test_get_de43_fields_international_addresses(self):
         default_processor_config = config['bit_config']['43'].get('field_processor_config')
