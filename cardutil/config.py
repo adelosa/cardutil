@@ -56,6 +56,7 @@ field_processor
         * ``DE43``: Mastercard Merchant details field. Adds DE43 sub fields DE43_*
 field_processor_config
      (optional) Where a field processor requires extra config, it can be placed in this field.
+
      For DE43 processor:
         field should contain a regex to split the DE43 field up into components. The regex
         groups defined will be added to the returned dictionary. Use Python regex variation.
