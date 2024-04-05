@@ -4,8 +4,7 @@ import unittest
 from cardutil import CardutilError
 from cardutil.mciipm import (
     VbsWriter, VbsReader, IpmReader, IpmWriter, Block1014, Unblock1014, block_1014, unblock_1014, vbs_list_to_bytes,
-    vbs_bytes_to_list, IpmParamReader, MciIpmDataError)
-
+    vbs_bytes_to_list, IpmParamReader, MciIpmDataError, ipm_info)
 from tests import message_ascii_raw, message_ebcdic_raw, print_stream
 
 
@@ -340,6 +339,137 @@ class MciIpmTestCase(unittest.TestCase):
 
             for record in reader:
                 print(record)
+
+
+class MciIpmInfoTestCase(unittest.TestCase):
+    def test_ipm_info_filelength_less_than_24(self):
+        # shortest valid file
+        data = io.BytesIO(
+            b'\x00\x00\x00\x18'     # record length(4)
+            b'1234' +               # mti(4)
+            b'\x00' * 15            # bitmap(16) -1 so invalid
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["isValidIPM"] is False
+        self.assertEqual('File does not have sufficient data to be valid', info['reason'])
+
+    def test_ipm_info_first_record_length_too_long(self):
+        data = io.BytesIO(b'\x00x\x00\x03\x39' + (b' ' * 20))
+        info = ipm_info(data)
+        print(info)
+        assert info["isValidIPM"] is False
+        self.assertEqual(
+            'First IPM record has large record size (7864323) which usually indicates a file issue',
+            info['reason'])
+
+    def test_ipm_info_bad_bitmap(self):
+        # bit 7 is not defined for Mastercard files.
+        # if present, would indicate a bad bitmap and file issue
+        data = io.BytesIO(
+            b'\x00\x00\x00\xFF' +       # record length
+            b'1234' +                   # mti(4)
+            b'\x02' + (b'\x00' * 15))   # bitmap - invalid
+        info = ipm_info(data)
+        print(info)
+        assert info["isValidIPM"] is False
+
+    def test_ipm_info_vbs_1013(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # Length(4)
+            b'1234' +                   # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16) - valid
+            (b' ' * 989)                # data(989)
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["isBlocked"] is False
+
+    def test_ipm_info_blocked_1014(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # length(4)
+            b'1234' +                   # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16) - valid
+            (b' ' * 988) +              # data(988)
+            b'\x40\x40'                 # block(2)
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["isBlocked"] is True
+
+    def test_ipm_info_vbs_1014(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # Length(4)
+            b'1234' +                   # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16) - valid
+            (b' ' * 992)                # data(990) - no marker
+        )
+
+        info = ipm_info(data)
+        print(info)
+        assert info["isBlocked"] is False
+
+    def test_ipm_info_blocked_2028(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # length(4)
+            b'1234' +                   # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16)
+            (b' ' * 988) +              # data(988)
+            b'\x40\x40' +               # block(2)
+            (b' ' * 1012) + b'\x40\x40' # record 2 with marker
+        )
+        # data = io.BytesIO(b'\x00\x00\x00\xff' + (b' ' * 1008) + b'\x40\x40' + (b' ' * 1012) + b'\x40\x40')
+        info = ipm_info(data)
+        print(info)
+        assert info["isBlocked"] is True
+
+    def test_ipm_info_vbs_2028(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # length(4)
+            b'1234' +                   # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16)
+            (b' ' * 990) +              # data(988)
+            b'\x40\x40' +               # block(2)
+            (b' ' * 1014)               # record 2, no marker
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["isBlocked"] is False
+
+    def test_ipm_info_vbs_2027(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # length(4)
+            b'1234' +                   # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16)
+            (b' ' * 988) +              # data(988)
+            b'\x40\x40' +               # block(2)
+            (b' ' * 1013)               # record 2 len 1013
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["isBlocked"] is False
+
+    def test_ipm_info_ebcdic_encode(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # Length(4)
+            '1234'.encode('cp037') +    # mti(4)
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16) - valid
+            (b' ' * 992)                # data(992) - no marker
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["encoding"] == 'cp037'
+
+    def test_ipm_info_unknown_encode(self):
+        data = io.BytesIO(
+            b'\x00\x00\x00\xff' +       # Length(4)
+            'XXXX'.encode('cp037') +    # mti(4) -- force encode issue
+            b'\x70' + (b'\x00' * 15) +  # Bitmap(16) - valid
+            (b' ' * 992)                # data(990) - no marker
+        )
+        info = ipm_info(data)
+        print(info)
+        assert info["encoding"] == 'unknown'
 
 
 if __name__ == '__main__':

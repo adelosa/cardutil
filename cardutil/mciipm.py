@@ -93,7 +93,8 @@ import logging
 import struct
 import typing
 
-from cardutil import iso8583, config, CardutilError
+from cardutil import iso8583, config, CardutilError, BitArray
+from cardutil.vendor import hexdump
 
 LOGGER = logging.getLogger(__name__)
 
@@ -270,7 +271,7 @@ class VbsReader(object):
                            f' got {len(record_length_raw)} -- assuming end of data')
             raise StopIteration
 
-        record_length = struct.unpack(">i", record_length_raw)[0]
+        record_length = struct.unpack(">I", record_length_raw)[0]
         LOGGER.debug("record_length=%s", record_length)
 
         # throw mcipm data error if length is negative or excessively large (indicates bad input)
@@ -483,7 +484,7 @@ class VbsWriter(object):
         # get the length of the record
         record_length = len(record)
         # convert length to binary
-        record_length_raw = struct.pack(">i", record_length)
+        record_length_raw = struct.pack(">I", record_length)
         # add length to output data
         self.out_file.write(record_length_raw)
         # add data to output
@@ -506,7 +507,7 @@ class VbsWriter(object):
         :return: None
         """
         # add zero length to end of record
-        self.out_file.write(struct.pack(">i", 0))
+        self.out_file.write(struct.pack(">I", 0))
         self.out_file.seek(0)
 
     def __enter__(self, *args, **kwargs):
@@ -656,6 +657,93 @@ def vbs_bytes_to_list(vbs_bytes: bytes, **kwargs) -> list:
     """
     file_in = io.BytesIO(vbs_bytes)
     return [record for record in VbsReader(file_in, **kwargs)]
+
+
+def ipm_info(input_data: typing.BinaryIO) -> dict:
+    """
+    Use this function to inspect an IPM file and provide details
+    :param input_data: The file like object of IPM data
+    :return: a dictionary containing file information
+    {
+        "isValidIPM": True,
+        "reason": "If not valid, describes the reason"
+        "isBlocked": True,
+        "encoding": "latin1",
+    }
+    """
+    output = {"isValidIPM": False}
+
+    # get first 2500 bytes to perform analysis
+    sample_data = input_data.read(2500)
+
+    # if data less than 20 bytes then can't be valid
+    if len(sample_data) < 24:
+        output["reason"] = "File does not have sufficient data to be valid"
+        return output
+
+    # check that the first 4 bytes contain a valid length
+    # large lengths indicate file issues
+    length_bytes = sample_data[:4]
+    record_length = struct.unpack(">I", length_bytes)[0]
+    if record_length > 1000:
+        output["reason"] = f"First IPM record has large record size ({record_length}) which usually indicates a file issue"
+        return output
+
+    # check the bitmap to make sure it has a valid bit config
+    bitmap_ok, reason = bitmap_check(sample_data[8:24])
+    if not bitmap_ok:
+        output["reason"] = reason
+        return output
+
+    output["isBlocked"] = block_1014_check(sample_data)
+    output["encoding"] = encoding_check(sample_data[4:8])
+    output["isValidIPM"] = True
+
+    return output
+
+
+def block_1014_check(sample_data):
+    # Blocked files should be blocked out to 1014 at a minimum.
+    # Going to work with first 1014 bytes of the file
+    if len(sample_data) < 1014:
+        return False
+
+    # if the last two bytes of stream is x40x40, the probably blocked.
+    # go and get the next 2 just to be sure
+    first_1014 = sample_data[0:1014]
+    if first_1014[-2:] == Block1014.PAD_CHAR * 2:
+        if len(sample_data) == 1014:
+            return True
+        if len(sample_data) == 2028 and sample_data[-2:] == Block1014.PAD_CHAR * 2:
+            return True
+    return False
+
+
+def bitmap_check(bitmap: bytes) -> (bool, str):
+    LOGGER.debug(hexdump.hexdump(bitmap,result='return'))
+    bitarray = BitArray.BitArray()
+    bitarray.frombytes(bitmap)
+    bits = bitarray.tolist()
+    for bit, bit_value in enumerate(bits):
+        if bit == 0:  # bit 1 does not have config
+            continue
+        if bit_value:
+            if str(bit+1) not in config.config['bit_config']:
+                return False, f"Bitmap uses DE{bit+1} which is not used in IPM"
+    return True, None
+
+
+def encoding_check(mti: bytes) -> str:
+    """
+    This function will check if an MTI in record looks
+    like ASCII based encoding or EBCDIC encoding.
+    This is a very basic encoding check.
+    """
+    if mti.decode('latin1').isnumeric():
+        return 'latin1'
+    if mti.decode('cp037').isnumeric():
+        return 'cp037'
+    return 'unknown'
 
 
 if __name__ == '__main__':

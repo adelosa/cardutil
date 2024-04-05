@@ -179,9 +179,9 @@ def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
     # add the message type
     try:
         return_values["MTI"] = message_type_indicator.decode(encoding)
-    except UnicodeError as ex:
+        int(return_values["MTI"])  # check that mti is number
+    except (ValueError, UnicodeError) as ex:
         raise Iso8583DataError('Failed decoding MTI field', binary_context_data=message, original_exception=ex)
-
     message_pointer = 0
     bitmap_list = _get_bitmap_list(binary_bitmap)
 
@@ -578,6 +578,7 @@ def _icc_to_dict(field_data):
             break
 
         field_length_raw = field_data[field_pointer:field_pointer+1]
+        LOGGER.debug(f"{field_length_raw=}")
         field_length = struct.unpack(">B", field_length_raw)[0]
 
         LOGGER.debug("%s", format(field_tag_display))

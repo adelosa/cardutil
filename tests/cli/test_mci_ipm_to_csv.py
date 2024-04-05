@@ -60,15 +60,20 @@ class MciIpmToCsvTestCase(unittest.TestCase):
             in_ipm_name = in_ipm.name
             print(in_ipm_name)
             in_ipm.close()
-        mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
-        mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_filename=in_ipm_name + '.csv', out_encoding='latin_1')
+
+        result = mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
+        self.assertFalse(result)
+
+        result = mci_ipm_to_csv.cli_run(
+            in_filename=in_ipm_name, out_filename=in_ipm_name + '.csv', out_encoding='latin_1')
+        self.assertFalse(result)
 
         # run with config file
         with tempfile.NamedTemporaryFile(mode='w+', delete=False) as in_config:
             config_filename = in_config.name
             in_config.write(CONFIG_DATA)
             in_config.close()
-            mci_ipm_to_csv.cli_run(
+            result = mci_ipm_to_csv.cli_run(
                 in_filename=in_ipm_name,
                 out_filename=in_ipm_name + '.csv',
                 config_file=in_config.name,
@@ -76,14 +81,18 @@ class MciIpmToCsvTestCase(unittest.TestCase):
                 debug=True
             )
             os.remove(config_filename)
+
+        self.assertFalse(result)
+
         with open(in_ipm_name + '.csv', 'r') as csv_data:
             csv_output = csv_data.read()
+
         self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
 
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
 
-    def test_ipm_to_csv_generate_exception(self):
+    def test_ipm_to_csv_exception_max_reclen(self):
         """
         Actually run using real files, and exception generated
         Triggered through negative RDW on second record -- invalid record length
@@ -92,7 +101,7 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         :return:
         """
         in_ipm_data = (b'\x00\x00\x00\x1a0100\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-                       b'nXmXlX\xFF\xFF\x00\x00')
+                       b'nXmXlX\xFF\xFF\xFF\xFF')
 
         with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as in_ipm:
             in_ipm.write(in_ipm_data)
@@ -102,13 +111,59 @@ class MciIpmToCsvTestCase(unittest.TestCase):
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
+            result = mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
+            output = f.getvalue()  #.splitlines()
+        os.remove(in_ipm_name)
+        os.remove(in_ipm_name + '.csv')
+        print(output)
+        self.assertEqual(-1, result)
+        assert output.splitlines()[4] == '*** ERROR - processing has stopped ***'
+
+    def test_ipm_to_csv_exception_bad_encoding(self):
+        in_ipm_data = (b'\x00\x00\x00\x1a'  # reclen
+                       b'\xf0\xf1\xf0\xf0'  # mti (cp037)
+                       b'\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                       b'nXmXlX\xFF\xFF\x00\x00'
+        )
+
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as in_ipm:
+            in_ipm.write(in_ipm_data)
+            in_ipm_name = in_ipm.name
+            print(in_ipm_name)
+            in_ipm.close()
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            result = mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
             output = f.getvalue().splitlines()
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
         print(output)
-        assert len(output) == 8
-        assert output[4] == '*** ERROR - processing has stopped ***'
+        self.assertEqual(-1, result)
+
+    def test_ipm_to_csv_exception_reclen_over_3000_bytes(self):
+        """
+        Check that diagnostics shows that file is invalid and reason
+        """
+        in_ipm_data = (b'\x00\x00\x0b\xb9'  # reclen
+                       b'0100'              # mti
+                       b'\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
+                       b'nXmXlX')           # data
+
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as in_ipm:
+            in_ipm.write(in_ipm_data)
+            in_ipm_name = in_ipm.name
+            print(in_ipm_name)
+            in_ipm.close()
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            result = mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
+            output = f.getvalue().splitlines()
+        os.remove(in_ipm_name)
+        os.remove(in_ipm_name + '.csv')
+        self.assertEqual(-1, result)
+        print(output)
 
 
 if __name__ == '__main__':

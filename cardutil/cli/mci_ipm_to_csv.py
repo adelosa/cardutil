@@ -4,11 +4,26 @@ import csv
 import logging
 
 from cardutil.cli import add_version, get_config, print_banner, print_exception_details
-from cardutil.mciipm import IpmReader, MciIpmDataError
+from cardutil.mciipm import IpmReader, MciIpmDataError, ipm_info
 
 
 def cli_entry():
     return cli_run(**vars(cli_parser().parse_args()))
+
+
+def print_check_details(in_ipm_info):
+    """
+    Print diagnostic information based on ipm_info
+    """
+    print("IPM file diagnostics:")
+    if not in_ipm_info["isValidIPM"]:
+        print("The file does not appear to be in the correct format")
+        print(f"Reason: {in_ipm_info['reason']}")
+        return
+    print("The file seems to be valid based on analysis of the file")
+    print("The following parameters were detected")
+    print(f"File encoding: {in_ipm_info['encoding']}")
+    print(f"1014 blocking: {in_ipm_info['isBlocked']}")
 
 
 def cli_run(**kwargs):
@@ -23,12 +38,17 @@ def cli_run(**kwargs):
     if not kwargs.get('out_filename'):
         kwargs['out_filename'] = kwargs['in_filename'] + '.csv'
 
+    # check ipm details
+    with open(kwargs['in_filename'], 'rb') as in_ipm:
+        in_ipm_info = ipm_info(in_ipm)
+
     try:
         with open(kwargs['in_filename'], 'rb') as in_ipm:
             with open(kwargs['out_filename'], 'w', encoding=kwargs.get('out_encoding')) as out_csv:
                 mci_ipm_to_csv(in_ipm=in_ipm, out_csv=out_csv, config=config, **kwargs)
     except MciIpmDataError as err:
         print_exception_details(err)
+        print_check_details(in_ipm_info)
         return -1
 
 

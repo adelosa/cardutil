@@ -42,12 +42,16 @@ class MciIpmEncodeTestCase(unittest.TestCase):
     def test_mci_ipm_encode_input_params(self):
         """
         Run mci_ipm_encode using real files
+        Default input encoding is cp500
         """
         # create an ipm file
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as out_ipm:
             out_ipm.write(
-                b'\x00\x00\x00\x1a0100\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
-                b'n\x9cm\x9cl\x9c\x00\x00\x00\x00')
+                b'\x00\x00\x00\x1a'
+                b'\xf0\xf1\xf0\xf0'  # mti(4) 
+                b'\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'  # bitmap(16)
+                b'\xf0\xf1\xf0\xf0\xf0\xf0'  # data(6)
+            )
             in_ipm_name = out_ipm.name
             out_ipm.close()
 
