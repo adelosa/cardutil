@@ -1,4 +1,5 @@
 import argparse
+import copy
 import logging
 
 import cardutil.config
@@ -46,7 +47,7 @@ def get_config():
     when doing dict to iso conversion, PDS fields generation should be removed.
     This function takes the standard config and removes any PDS field processors
     """
-    config = cardutil.config.config
+    config = copy.deepcopy(cardutil.config.config)
     bit_config = config['bit_config']
     for field, field_config in bit_config.items():
         if field_config.get("field_processor") == 'PDS':
