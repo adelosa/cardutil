@@ -335,10 +335,44 @@ class MciIpmTestCase(unittest.TestCase):
                 test_param_vbs.write_many(param_file_data)
 
             test_param_stream.seek(0)
-            reader = IpmParamReader(test_param_stream, table_id='IP0040T1')
+            reader = IpmParamReader(test_param_stream, table_id="IP0040T1")
 
-            for record in reader:
-                print(record)
+            output = list(reader)
+            print(output)
+
+        self.assertEqual(1, len(output))
+
+    def test_ipm_param_reader_expanded(self):
+        """
+        parameter files can be expanded. This test reads an expanded record
+        """
+        param_file_data = [
+            b"2011101414AIP0000T1IP0000T1 TABLE LIST                 "
+            + 188 * b"."
+            + b"001",
+            b"2014101414AIP0000T1IP0040T1 ACCOUNT RANGE TABLE        "
+            + 188 * b"."
+            + b"036",
+            b"TRAILER RECORD IP0000T1  00000218                                               ",
+            b"........xxx....",  # dummy record
+            b"2024012414AIP0040T15417750570000000000MPL5417751329999999999MCC"
+            b"010000000177510080140USA8401MPL NYNMPL7N0000008402"
+            b"0000000000000000000000000000 000000NN   000000NNNN0NUNN0N N     ",
+        ]
+
+        with io.BytesIO() as test_param_stream:
+            with VbsWriter(test_param_stream, blocked=True) as test_param_vbs:
+                test_param_vbs.write_many(param_file_data)
+
+            test_param_stream.seek(0)
+            reader = IpmParamReader(
+                test_param_stream, table_id="IP0040T1", expanded=True
+            )
+
+            output = list(reader)
+            print(output)
+
+        self.assertEqual(1, len(output))
 
 
 class MciIpmInfoTestCase(unittest.TestCase):
@@ -411,12 +445,12 @@ class MciIpmInfoTestCase(unittest.TestCase):
 
     def test_ipm_info_blocked_2028(self):
         data = io.BytesIO(
-            b'\x00\x00\x00\xff' +       # length(4)
-            b'1234' +                   # mti(4)
-            b'\x70' + (b'\x00' * 15) +  # Bitmap(16)
-            (b' ' * 988) +              # data(988)
-            b'\x40\x40' +               # block(2)
-            (b' ' * 1012) + b'\x40\x40' # record 2 with marker
+            b'\x00\x00\x00\xff' +        # length(4)
+            b'1234' +                    # mti(4)
+            b'\x70' + (b'\x00' * 15) +   # Bitmap(16)
+            (b' ' * 988) +               # data(988)
+            b'\x40\x40' +                # block(2)
+            (b' ' * 1012) + b'\x40\x40'  # record 2 with marker
         )
         # data = io.BytesIO(b'\x00\x00\x00\xff' + (b' ' * 1008) + b'\x40\x40' + (b' ' * 1012) + b'\x40\x40')
         info = ipm_info(data)

@@ -157,7 +157,7 @@ Extracts parameter tables from the IPM parameter extracts files
 
     usage: mci_ipm_param_to_csv [-h] [-o OUT_FILENAME]
                                 [--in-encoding IN_ENCODING] [--out-encoding OUT_ENCODING]
-                                [--no1014blocking]
+                                [--no1014blocking] [--expanded]
                                 [--config-file CONFIG_FILE] [--version]
                                 in_filename table_id
 
@@ -173,6 +173,7 @@ Extracts parameter tables from the IPM parameter extracts files
       --in-encoding IN_ENCODING
       --out-encoding OUT_ENCODING
       --no1014blocking
+      --expanded
       --config-file CONFIG_FILE
                             File containing cardutil configuration - JSON format
       --version             show program's version number and exit
@@ -210,13 +211,10 @@ See :py:mod:`cardutil.config`.
         ],
         "mci_parameter_tables": {
             "IP0006T1": {
-                "effective_timestamp": {"start": 1, "end": 10},
-                "active_inactive_code": {"start": 7, "end": 8},
-                "table_id": {"start": 8, "end": 11},
-                "card_program_id": {"start": 11, "end": 14},
-                "data_element_id": {"start": 14, "end": 17},
-                "data_element_name": {"start": 17, "end": 74},
-                "data_element_format": {"start": 74, "end": 77}
+                "card_program_id": {"start": 19, "end": 22},
+                "data_element_id": {"start": 22, "end": 25},
+                "data_element_name": {"start": 25, "end": 82},
+                "data_element_format": {"start": 82, "end": 85}
             }
         }
     }

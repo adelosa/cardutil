@@ -48,7 +48,7 @@ class MciIpmEncodeTestCase(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode='wb', delete=False) as out_ipm:
             out_ipm.write(
                 b'\x00\x00\x00\x1a'
-                b'\xf0\xf1\xf0\xf0'  # mti(4) 
+                b'\xf0\xf1\xf0\xf0'  # mti(4)
                 b'\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'  # bitmap(16)
                 b'\xf0\xf1\xf0\xf0\xf0\xf0'  # data(6)
             )

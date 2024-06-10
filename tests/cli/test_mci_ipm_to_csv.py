@@ -112,7 +112,7 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
             result = mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
-            output = f.getvalue()  #.splitlines()
+            output = f.getvalue()  # .splitlines()
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
         print(output)
@@ -124,7 +124,7 @@ class MciIpmToCsvTestCase(unittest.TestCase):
                        b'\xf0\xf1\xf0\xf0'  # mti (cp037)
                        b'\x80\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
                        b'nXmXlX\xFF\xFF\x00\x00'
-        )
+                       )
 
         with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as in_ipm:
             in_ipm.write(in_ipm_data)

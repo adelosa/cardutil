@@ -28,24 +28,49 @@ def cli_run(**kwargs):
 
 
 def cli_parser():
-    parser = argparse.ArgumentParser(prog='mci_ipm_param_to_csv', description='Mastercard IPM parameter file to CSV')
-    parser.add_argument('in_filename', help='IPM Parameter file to process')
-    parser.add_argument('table_id', help='Parameter table to extract')
-    parser.add_argument('-o', '--out-filename')
-    parser.add_argument('--in-encoding')
-    parser.add_argument('--out-encoding')
-    parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--no1014blocking', action='store_true')
-    parser.add_argument('--config-file', help='File containing cardutil configuration - JSON format')
+    parser = argparse.ArgumentParser(
+        prog="mci_ipm_param_to_csv", description="Mastercard IPM parameter file to CSV"
+    )
+    parser.add_argument("in_filename", help="IPM Parameter file to process")
+    parser.add_argument("table_id", help="Parameter table to extract")
+    parser.add_argument("-o", "--out-filename")
+    parser.add_argument("--in-encoding")
+    parser.add_argument("--out-encoding")
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--no1014blocking", action="store_true")
+    parser.add_argument("--expanded", action="store_true")
+    parser.add_argument(
+        "--config-file", help="File containing cardutil configuration - JSON format"
+    )
     add_version(parser)
 
     return parser
 
 
-def mci_ipm_param_to_csv(in_param, out_csv, table_id, config=None, in_encoding=None, no1014blocking=False, **_):
+def mci_ipm_param_to_csv(
+    in_param,
+    out_csv,
+    table_id,
+    config=None,
+    in_encoding=None,
+    no1014blocking=False,
+    expanded=False,
+    **_
+):
     blocked = not no1014blocking
-    vbs_in = mciipm.IpmParamReader(in_param, table_id, param_config=config, blocked=blocked, encoding=in_encoding)
-    csv_writer = csv.DictWriter(out_csv, fieldnames=config[table_id].keys(), extrasaction="ignore", lineterminator="\n")
+    vbs_in = mciipm.IpmParamReader(
+        in_param,
+        table_id,
+        param_config=config,
+        blocked=blocked,
+        encoding=in_encoding,
+        expanded=expanded,
+    )
+    fieldnames = ["table_id", "effective_timestamp", "active_inactive_code"]
+    fieldnames.extend(config[table_id].keys())
+    csv_writer = csv.DictWriter(
+        out_csv, fieldnames=fieldnames, extrasaction="ignore", lineterminator="\n"
+    )
     csv_writer.writeheader()
     csv_writer.writerows(vbs_in)
 

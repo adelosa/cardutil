@@ -17,7 +17,7 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
         self.assertEqual(
             args,
             {'in_filename': 'file1.ipm', 'out_filename': None, 'in_encoding': None, 'table_id': 'IP0000T1',
-             'out_encoding': None, 'no1014blocking': False, 'config_file': None, 'debug': False})
+             'out_encoding': None, 'no1014blocking': False, 'config_file': None, 'debug': False, 'expanded': False})
 
     def test_ipm_to_csv_input_params(self):
         """
@@ -71,14 +71,17 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
         csv_records = test_csv_data.split('\n')
 
         # check the header
-        config_header_keys = list(MCI_PARAMETER_CONFIG.get('IP0040T1').keys())
+        config_header_keys = ["table_id", "effective_timestamp", "active_inactive_code"]
+        config_header_keys.extend(MCI_PARAMETER_CONFIG.get('IP0040T1').keys())
         csv_header_keys = csv_records[0].split(',')
+        print(csv_header_keys)
         self.assertEqual(config_header_keys, csv_header_keys)
 
         # check the record extracted
-        self.assertEqual(csv_records[1], '711114,A,036,5116545113000000000,MCC,5116545113999999999,MCC,02,00000001527,'
-                                         '1,0084563,AUS,036,C,MCC, ,N,N,Y,MCC, ,N,000000,036,2,'
-                                         '0000000000000000000000000001, ,000000,N,Y,   ,000000,N,N,N,N')
+        print(csv_records[1])
+        self.assertEqual(csv_records[1], 'IP0040T1,1711114,A,5116545113000000000,MCC,5116545113999999999,'
+                                         'MCC,02,00000001527,1,0084563,AUS,036,C,MCC, ,N,N,Y,MCC, ,N,000000,036,2,'
+                                         '0000000000000000000000000001, ,000000,N,Y,   ,000000,N,N,N,N,,,,,')
 
     def test_extract_ip0040t1_no_records(self):
         param_file_data = [
@@ -102,7 +105,9 @@ class MciIpmParamToCsvTestCase(unittest.TestCase):
         self.assertEqual(len(csv_records), 2, msg="Only 2 record returned -- header, dummy")
 
         # check the header
-        config_header_keys = list(MCI_PARAMETER_CONFIG.get('IP0040T1').keys())
+        config_header_keys = ["table_id", "effective_timestamp", "active_inactive_code"]
+        config_header_keys.extend(MCI_PARAMETER_CONFIG.get('IP0040T1').keys())
+
         csv_header_keys = csv_records[0].split(',')
         self.assertEqual(config_header_keys, csv_header_keys)
 

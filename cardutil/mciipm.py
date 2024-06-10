@@ -379,11 +379,25 @@ class IpmParamReader(VbsReader):
     _IP0000T1_TABLE_ID = slice(19, 27)
     _IP0000T1_TABLE_SUB_ID = slice(243, 246)
 
-    # table type for all except IP0000T1 - get this 3 letter code from self.table_keys
-    _TABLE_SUB_ID = slice(8, 11)
+    # compressed table type for all except IP0000T1 - get this 3 letter code from self.table_keys
+    _C_EFF_TIMESTAMP = slice(0, 7)
+    _C_ACTIVE_INACTIVE_CODE = slice(7, 8)
+    _C_TABLE_SUB_ID = slice(8, 11)
 
-    def __init__(self, param_file: typing.BinaryIO, table_id: str, encoding: str = None, param_config: dict = None,
-                 **kwargs):
+    # expanded table common fields
+    _X_EFF_TIMESTAMP = slice(0, 10)
+    _X_ACTIVE_INACTIVE_CODE = slice(10, 11)
+    _X_TABLE_ID = slice(11, 19)
+
+    def __init__(
+        self,
+        param_file: typing.BinaryIO,
+        table_id: str,
+        encoding: str = None,
+        param_config: dict = None,
+        expanded: bool = False,
+        **kwargs,
+    ):
         """
         Create a new IpmParamReader
 
@@ -396,6 +410,7 @@ class IpmParamReader(VbsReader):
         self.param_config = param_config if param_config else config.config.get('mci_parameter_tables')
         self.table_id = table_id
         self.table_index = dict()
+        self.expanded = expanded
         super(IpmParamReader, self).__init__(param_file, **kwargs)
 
         # check if config available for table id
@@ -422,18 +437,49 @@ class IpmParamReader(VbsReader):
     def __next__(self) -> dict:
         while True:
             record = super(IpmParamReader, self).__next__()
-            record_table_id = self.table_index.get(record[self._TABLE_SUB_ID].decode(self.encoding))
+            if self.expanded:
+                record_table_id = record[self._X_TABLE_ID].decode(self.encoding)
+                record_effective_timestamp = record[self._X_EFF_TIMESTAMP].decode(
+                    self.encoding
+                )
+                record_active_inactive_code = record[
+                    self._X_ACTIVE_INACTIVE_CODE
+                ].decode(self.encoding)
+            else:
+                record_table_id = self.table_index.get(
+                    record[self._C_TABLE_SUB_ID].decode(self.encoding)
+                )
+                record_effective_timestamp = record[self._C_EFF_TIMESTAMP].decode(
+                    self.encoding
+                )
+                record_active_inactive_code = record[
+                    self._C_ACTIVE_INACTIVE_CODE
+                ].decode(self.encoding)
+
+            LOGGER.debug(f"{record_table_id=}, {record=}")
             if record_table_id == self.table_id:
-                record_dict = dict()
+                record_dict = {
+                    "table_id": record_table_id,
+                    "effective_timestamp": record_effective_timestamp,
+                    "active_inactive_code": record_active_inactive_code,
+                }
                 for field in self.param_config[record_table_id]:
                     record_dict[field] = self._get_param_field(record, field)
                 return record_dict
 
     def _get_param_field(self, record, field):
-        table_id = self.table_index.get(record[self._TABLE_SUB_ID].decode(self.encoding))
+        field_offset = 0
+        if self.expanded:
+            record_table_id = record[self._X_TABLE_ID].decode(self.encoding)
+        else:
+            record_table_id = self.table_index.get(
+                record[self._C_TABLE_SUB_ID].decode(self.encoding)
+            )
+            field_offset = -8  # all fields should be offset by this value
         return record[
-               self.param_config[
-                   table_id][field]["start"]:self.param_config[table_id][field]["end"]].decode(self.encoding)
+            self.param_config[record_table_id][field]["start"] + field_offset:
+            self.param_config[record_table_id][field]["end"] + field_offset
+        ].decode(self.encoding)
 
 
 class VbsWriter(object):
@@ -662,14 +708,19 @@ def vbs_bytes_to_list(vbs_bytes: bytes, **kwargs) -> list:
 def ipm_info(input_data: typing.BinaryIO) -> dict:
     """
     Use this function to inspect an IPM file and provide details
+
     :param input_data: The file like object of IPM data
-    :return: a dictionary containing file information
-    {
-        "isValidIPM": True,
-        "reason": "If not valid, describes the reason"
-        "isBlocked": True,
-        "encoding": "latin1",
-    }
+    :return: a dictionary containing file information:
+
+    .. code-block:: text
+
+        {
+            "isValidIPM": True,
+            "reason": "If not valid, describes the reason"
+            "isBlocked": True,
+            "encoding": "latin1",
+        }
+
     """
     output = {"isValidIPM": False}
 
@@ -686,7 +737,8 @@ def ipm_info(input_data: typing.BinaryIO) -> dict:
     length_bytes = sample_data[:4]
     record_length = struct.unpack(">I", length_bytes)[0]
     if record_length > 1000:
-        output["reason"] = f"First IPM record has large record size ({record_length}) which usually indicates a file issue"
+        output["reason"] = (f"First IPM record has large record size ({record_length}) which"
+                            f" usually indicates a file issue")
         return output
 
     # check the bitmap to make sure it has a valid bit config
@@ -720,7 +772,7 @@ def block_1014_check(sample_data):
 
 
 def bitmap_check(bitmap: bytes) -> (bool, str):
-    LOGGER.debug(hexdump.hexdump(bitmap,result='return'))
+    LOGGER.debug(hexdump.hexdump(bitmap, result='return'))
     bitarray = BitArray.BitArray()
     bitarray.frombytes(bitmap)
     bits = bitarray.tolist()
