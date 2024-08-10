@@ -1,5 +1,6 @@
 from binascii import unhexlify, hexlify
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers import Cipher, modes
+from cryptography.hazmat.decrepit.ciphers import algorithms as d_algorithms
 from cryptography.hazmat.backends import default_backend
 
 backend = default_backend()
@@ -35,7 +36,7 @@ def calculate_kcv(binary_key: bytes, kvc_length: int = 6) -> str:
     :param kvc_length: length of kvc value: default is 6
     :return: key check value
     """
-    cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
+    cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
     encryptor = cipher.encryptor()
     ct = encryptor.update(b'\x00' * 16) + encryptor.finalize()
     return hexlify(ct)[0:kvc_length].decode()
@@ -44,7 +45,7 @@ def calculate_kcv(binary_key: bytes, kvc_length: int = 6) -> str:
 def encrypt_key(key_to_encrypt: str, master_key: str) -> bytes:
     binary_key = unhexlify(master_key)
     binary_data = unhexlify(key_to_encrypt)
-    cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
+    cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
     encryptor = cipher.encryptor()
     return encryptor.update(binary_data) + encryptor.finalize()
 

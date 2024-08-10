@@ -109,6 +109,7 @@ import secrets
 import logging
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.decrepit.ciphers import algorithms as d_algorithms
 from cryptography.hazmat.backends import default_backend
 
 backend = default_backend()
@@ -286,14 +287,14 @@ class TdesEncryptedPinBlockMixin(abc.ABC):
     @staticmethod
     def encrypt(key: str, data: bytes) -> bytes:
         binary_key = binascii.unhexlify(key)
-        cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
+        cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
         encryptor = cipher.encryptor()
         return encryptor.update(data) + encryptor.finalize()
 
     @staticmethod
     def decrypt(key: str, cipher_data: bytes) -> bytes:
         binary_key = binascii.unhexlify(key)
-        cipher = Cipher(algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
+        cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
         decryptor = cipher.decryptor()
         return decryptor.update(cipher_data) + decryptor.finalize()
 
@@ -391,7 +392,7 @@ def calculate_pvv(pin: str, pvv_key: str, key_index: int, card_number: str):
     """
     tsp = _get_tsp(card_number, key_index, pin)
     bin_pvv_key = binascii.unhexlify(pvv_key)
-    cipher = Cipher(algorithms.TripleDES(bin_pvv_key), modes.ECB(), backend=backend)
+    cipher = Cipher(d_algorithms.TripleDES(bin_pvv_key), modes.ECB(), backend=backend)
     encryptor = cipher.encryptor()
     ct = encryptor.update(binascii.unhexlify(tsp)) + encryptor.finalize()
     values_pass1 = [value for value in binascii.hexlify(ct).decode() if value.isdigit()]
