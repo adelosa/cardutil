@@ -277,7 +277,7 @@ class VbsReader(object):
         # throw mcipm data error if length is negative or excessively large (indicates bad input)
         if record_length < 0 or record_length > config.config.get("MAX_VBS_RECORD_LENGTH", 6000):
             raise MciIpmDataError(f"Exceeded configured maximum VBS record length "
-                                  f"({config.config.get("MAX_VBS_RECORD_LENGTH", 6000)}"
+                                  f"({config.config.get('MAX_VBS_RECORD_LENGTH', 6000)}"
                                   f" - value read was {record_length}",
                                   record_number=self.record_number,
                                   binary_context_data=record_length_raw)
