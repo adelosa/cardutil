@@ -394,8 +394,8 @@ class MciIpmInfoTestCase(unittest.TestCase):
         print(info)
         assert info["isValidIPM"] is False
         self.assertEqual(
-            'First IPM record has large record size (7864323) which usually indicates a file issue',
-            info['reason'])
+            'First IPM record length (7864323) exceeds the configured maximum record length (6000) '
+            'which usually indicates a file issue', info['reason'])
 
     def test_ipm_info_bad_bitmap(self):
         # bit 7 is not defined for Mastercard files.

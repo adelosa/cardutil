@@ -110,6 +110,7 @@ be included here - they are automatically included in the extract.
 """
 
 config = {
+    "MAX_VBS_RECORD_LENGTH": 6000,
     "bit_config": {
         "1": {
             "field_name": "Bitmap secondary",

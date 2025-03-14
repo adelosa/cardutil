@@ -275,8 +275,10 @@ class VbsReader(object):
         LOGGER.debug("record_length=%s", record_length)
 
         # throw mcipm data error if length is negative or excessively large (indicates bad input)
-        if record_length < 0 or record_length > 3000:
-            raise MciIpmDataError(f"Invalid record length - value read was {record_length}",
+        if record_length < 0 or record_length > config.config.get("MAX_VBS_RECORD_LENGTH", 6000):
+            raise MciIpmDataError(f"Exceeded configured maximum VBS record length "
+                                  f"({config.config.get("MAX_VBS_RECORD_LENGTH", 6000)}"
+                                  f" - value read was {record_length}",
                                   record_number=self.record_number,
                                   binary_context_data=record_length_raw)
 
@@ -736,8 +738,14 @@ def ipm_info(input_data: typing.BinaryIO) -> dict:
     # large lengths indicate file issues
     length_bytes = sample_data[:4]
     record_length = struct.unpack(">I", length_bytes)[0]
-    if record_length > 1000:
-        output["reason"] = (f"First IPM record has large record size ({record_length}) which"
+    max_rec_length = config.config.get("MAX_VBS_RECORD_LENGTH", 6000)
+    if record_length > max_rec_length:
+        output["reason"] = (f"First IPM record length ({record_length}) exceeds the configured maximum record length "
+                            f"({max_rec_length}) which usually indicates a file issue")
+        return output
+    # A negative record length indicates a value beyond the positive range - a data error
+    if record_length < 0:
+        output["reason"] = (f"First IPM record had a negative record length ({record_length}) which"
                             f" usually indicates a file issue")
         return output
 
