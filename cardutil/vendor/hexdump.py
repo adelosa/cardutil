@@ -197,12 +197,15 @@ def dump(binary, size=2, sep=' '):
     return sep.join(chunks(hexstr.upper(), size))
 
 
-def dumpgen(data):
+def dumpgen(data, encoding='latin-1'):
     '''
     Generator that produces strings:
 
     '00000000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................'
     '''
+    # for the purposes of logging, if encoding is 'ascii', set to 'latin-1'
+    if encoding == 'ascii':
+        encoding = 'latin-1'
     generator = genchunks(data, 16)
     for addr, d in enumerate(generator):
         # 00000000:
@@ -225,14 +228,17 @@ def dumpgen(data):
             # printable ASCII range 0x20 to 0x7E
             if not PY3K:
                 byte = ord(byte)
-            if 0x20 <= byte <= 0x7E:
-                line += chr(byte)
+            char = byte.to_bytes().decode(encoding)
+            if char.isprintable():
+            # if 0x20 <= byte <= 0x7E:
+                # line += chr(byte)
+                line += char
             else:
                 line += '.'
         yield line
 
 
-def hexdump(data, result='print'):
+def hexdump(data, result='print', encoding='latin-1'):
     '''
     Transform binary data to the hex dump text format:
 
@@ -249,7 +255,7 @@ def hexdump(data, result='print'):
     if PY3K and type(data) == str:
         raise TypeError('Abstract unicode data (expected bytes sequence)')
 
-    gen = dumpgen(data)
+    gen = dumpgen(data, encoding=encoding)
     if result == 'generator':
         return gen
     elif result == 'return':

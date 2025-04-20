@@ -87,7 +87,7 @@ class MciIpmParamEncodeTestCase(unittest.TestCase):
         # with cp500 encoding (ebcdic)
         mci_ipm_param_encode.cli_run(in_filename=in_vbs_name, out_filename=output_file_name, out_encoding='cp500')
         with open(in_vbs_name + '.out', 'rb') as output_file:
-            hexdump(output_file.read())
+            hexdump(output_file.read(), encoding='cp500')
             print('*'*20)
         os.remove(output_file_name)
 

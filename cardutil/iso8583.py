@@ -157,7 +157,9 @@ def _iso8583_to_dict(message, bit_config, encoding=DEFAULT_ENCODING, hex_bitmap=
     * key = 'TAGxxxx' icc fields
 
     """
-    LOGGER.debug("Processing message: len=%s contents:\n%s", len(message), hexdump(message, result="return"))
+    LOGGER.debug(
+        "Processing message: len=%s contents:\n%s",
+        len(message), hexdump(message, result="return", encoding=encoding))
     # split raw message into components MessageType(4B), Bitmap(16B),
     # Message(l=*)
 
