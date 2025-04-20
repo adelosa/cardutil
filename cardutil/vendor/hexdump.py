@@ -228,7 +228,7 @@ def dumpgen(data, encoding='latin-1'):
             # printable ASCII range 0x20 to 0x7E
             if not PY3K:
                 byte = ord(byte)
-            char = byte.to_bytes().decode(encoding)
+            char = byte.to_bytes(length=1, byteorder='big').decode(encoding)
             if char.isprintable():
             # if 0x20 <= byte <= 0x7E:
                 # line += chr(byte)
