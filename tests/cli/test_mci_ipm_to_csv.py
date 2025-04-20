@@ -166,5 +166,26 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         print(output)
 
 
+    def test_ipm_to_csv_invalid_file(self):
+        """
+        Check that detected as invalid IPM file
+        """
+        in_ipm_data = (b'\xFF\xFF\xFF\xFF')  # bad record
+
+        with tempfile.NamedTemporaryFile(mode='w+b', delete=False) as in_ipm:
+            in_ipm.write(in_ipm_data)
+            in_ipm_name = in_ipm.name
+            print(in_ipm_name)
+            in_ipm.close()
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            result = mci_ipm_to_csv.cli_run(in_filename=in_ipm_name, out_encoding='ascii')
+            output = f.getvalue().splitlines()
+        os.remove(in_ipm_name)
+        os.remove(in_ipm_name + '.csv')
+        self.assertEqual(-1, result)
+        print(output)
+
 if __name__ == '__main__':
     unittest.main()

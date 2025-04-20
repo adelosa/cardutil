@@ -743,11 +743,6 @@ def ipm_info(input_data: typing.BinaryIO) -> dict:
         output["reason"] = (f"First IPM record length ({record_length}) exceeds the configured maximum record length "
                             f"({max_rec_length}) which usually indicates a file issue")
         return output
-    # A negative record length indicates a value beyond the positive range - a data error
-    if record_length < 0:
-        output["reason"] = (f"First IPM record had a negative record length ({record_length}) which"
-                            f" usually indicates a file issue")
-        return output
 
     # check the bitmap to make sure it has a valid bit config
     bitmap_ok, reason = bitmap_check(sample_data[8:24])
