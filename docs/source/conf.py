@@ -18,7 +18,7 @@ import cardutil
 # -- Project information -----------------------------------------------------
 
 project = 'cardutil'
-copyright = '2019-2024 All rights reserved.'
+copyright = '2019-2025 All rights reserved.'
 author = 'Anthony Delosa'
 
 # The full version, including alpha/beta/rc tags
@@ -54,7 +54,7 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-# html_static_path = ['_static']
+html_static_path = ['_static']
 
 # Order the generated doco same as the source
 autodoc_member_order = 'bysource'
