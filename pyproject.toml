@@ -1,3 +1,19 @@
-[build-system]
-requires = ["setuptools>=77.0.3"]
-build-backend = "setuptools.build_meta"
+[project]
+name = "cardutil"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pytest>=8.4.1",
+    "pytest-mock>=3.14.1",
+]
+
+[project.scripts]
+mci_csv_to_ipm = "cardutil.cli.mci_csv_to_ipm:cli_entry"
+mci_ipm_encode = "cardutil.cli.mci_ipm_encode:cli_entry"
+mci_ipm_param_encode = "cardutil.cli.mci_ipm_param_encode:cli_entry"
+mci_ipm_param_to_csv = "cardutil.cli.mci_ipm_param_to_csv:cli_entry"
+mci_ipm_to_csv = "cardutil.cli.mci_ipm_to_csv:cli_entry"
+mideu = "cardutil.cli.mideu:cli_entry"
+paramconv = "cardutil.cli.paramconv:cli_entry"
