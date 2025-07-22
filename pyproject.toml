@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = [
+
+[project.optional-dependencies]
+dev = [
     "pytest>=8.4.1",
     "pytest-mock>=3.14.1",
 ]

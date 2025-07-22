@@ -6,16 +6,19 @@ requires-python = ">=3.13"
 name = "cardutil"
 version = "0.1.0"
 source = { virtual = "." }
-dependencies = [
+
+[package.optional-dependencies]
+dev = [
     { name = "pytest" },
     { name = "pytest-mock" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "pytest", specifier = ">=8.4.1" },
-    { name = "pytest-mock", specifier = ">=3.14.1" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.1" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "colorama"
