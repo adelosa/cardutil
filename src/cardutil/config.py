@@ -267,6 +267,7 @@ config = {
             "field_type": "LLLVAR",
             "field_length": 255,
             "field_processor": "ICC",
+            "field_error_handling": "ERROR",  # ERROR (default) or WARN
         },
         "62": {
             "field_name": "Additional data 2",

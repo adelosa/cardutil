@@ -365,7 +365,9 @@ def _iso8583_to_field(bit, bit_config, message_data, encoding=DEFAULT_ENCODING):
 
     # if ICC field, break into tags
     if field_processor == 'ICC':
-        return_values.update(_icc_to_dict(field_data))
+        # Get error handling configuration from bit_config, default to ERROR
+        error_handling = bit_config.get('field_error_handling', 'ERROR')
+        return_values.update(_icc_to_dict(field_data, error_handling))
 
     return return_values, field_length + length_size
 
@@ -549,11 +551,12 @@ def _pds_to_dict(field_data):
     return return_values
 
 
-def _icc_to_dict(field_data):
+def _icc_to_dict(field_data, error_handling="ERROR"):
     """
     Get de55 fields from message
 
     :param field_data: the field containing de55
+    :param error_handling: configuration for how to handle errors ("ERROR" or "WARN")
     :return: dictionary of de55 key values
              key is tag+tagid
     """
@@ -562,39 +565,93 @@ def _icc_to_dict(field_data):
     field_pointer = 0
     return_values = {"ICC_DATA": binascii.b2a_hex(field_data).decode()}
 
-    while field_pointer < len(field_data):
-        # get the tag id (one byte)
-        field_tag = field_data[field_pointer:field_pointer+1]
-        # set to 2 bytes if 2 byte tag
-        if field_tag in TWO_BYTE_TAG_PREFIXES:
-            field_tag = field_data[field_pointer:field_pointer+2]
-            field_pointer += 2
-        else:
-            field_pointer += 1
+    try:
+        while field_pointer < len(field_data):
+            # get the tag id (one byte)
+            field_tag = field_data[field_pointer:field_pointer+1]
+            
+            # Check if there's data to read
+            if not field_tag:
+                if error_handling == "ERROR":
+                    raise Iso8583DataError("DE55: No more data to read at position %d" % field_pointer)
+                elif error_handling == "WARN":
+                    LOGGER.warning("DE55: No more data to read at position %d", field_pointer)
+                break
+                
+            # set to 2 bytes if 2 byte tag
+            if field_tag in TWO_BYTE_TAG_PREFIXES:
+                # Check if there's enough data for 2-byte tag
+                if field_pointer + 1 >= len(field_data):
+                    if error_handling == "ERROR":
+                        raise Iso8583DataError("DE55: Incomplete 2-byte tag at position %d" % field_pointer)
+                    elif error_handling == "WARN":
+                        LOGGER.warning("DE55: Incomplete 2-byte tag at position %d", field_pointer)
+                    break
+                field_tag = field_data[field_pointer:field_pointer+2]
+                field_pointer += 2
+            else:
+                field_pointer += 1
 
-        field_tag_display = binascii.b2a_hex(field_tag)
-        LOGGER.debug("field_tag_display=%s", field_tag_display)
+            field_tag_display = binascii.b2a_hex(field_tag)
+            LOGGER.debug("field_tag_display=%s", field_tag_display)
 
-        # stop processing de55 if low values tag found
-        if field_tag_display == b'00':
-            break
+            # stop processing de55 if low values tag found
+            if field_tag_display == b'00':
+                break
 
-        field_length_raw = field_data[field_pointer:field_pointer+1]
-        LOGGER.debug(f"{field_length_raw=}")
-        field_length = struct.unpack(">B", field_length_raw)[0]
+            # Check if there's data for the length byte
+            if field_pointer >= len(field_data):
+                if error_handling == "ERROR":
+                    raise Iso8583DataError("DE55: No length byte available for tag %s at position %d" % 
+                                         (field_tag_display, field_pointer))
+                elif error_handling == "WARN":
+                    LOGGER.warning("DE55: No length byte available for tag %s at position %d", 
+                                 field_tag_display, field_pointer)
+                break
+                
+            field_length_raw = field_data[field_pointer:field_pointer+1]
+            LOGGER.debug(f"{field_length_raw=}")
+            
+            # Check if we got any data
+            if not field_length_raw:
+                if error_handling == "ERROR":
+                    raise Iso8583DataError("DE55: Empty length byte for tag %s" % field_tag_display)
+                elif error_handling == "WARN":
+                    LOGGER.warning("DE55: Empty length byte for tag %s", field_tag_display)
+                break
+                
+            field_length = struct.unpack(">B", field_length_raw)[0]
 
-        LOGGER.debug("%s", format(field_tag_display))
-        LOGGER.debug(field_length)
+            LOGGER.debug("%s", format(field_tag_display))
+            LOGGER.debug(field_length)
 
-        # get the tag data
-        de_field_data = field_data[field_pointer+1:field_pointer+field_length+1]
-        de_field_data_display = binascii.b2a_hex(de_field_data).decode()
-        LOGGER.debug("%s", de_field_data_display)
-        return_values["TAG" + field_tag_display.upper().decode()] = de_field_data_display
+            # Check if there's enough data for the field value
+            if field_pointer + 1 + field_length > len(field_data):
+                if error_handling == "ERROR":
+                    raise Iso8583DataError("DE55: Insufficient data for tag %s, expected %d bytes, only %d available" %
+                                         (field_tag_display, field_length, len(field_data) - field_pointer - 1))
+                elif error_handling == "WARN":
+                    LOGGER.warning("DE55: Insufficient data for tag %s, expected %d bytes, only %d available",
+                                 field_tag_display, field_length, len(field_data) - field_pointer - 1)
+                break
 
-        # increment the fieldPointer
-        field_pointer += 1+field_length
+            # get the tag data
+            de_field_data = field_data[field_pointer+1:field_pointer+field_length+1]
+            de_field_data_display = binascii.b2a_hex(de_field_data).decode()
+            LOGGER.debug("%s", de_field_data_display)
+            return_values["TAG" + field_tag_display.upper().decode()] = de_field_data_display
 
+            # increment the fieldPointer
+            field_pointer += 1+field_length
+            
+    except Exception as e:
+        if error_handling == "ERROR":
+            raise
+        elif error_handling == "WARN":
+            LOGGER.error("DE55: Error processing ICC data at position %d: %s", field_pointer, str(e))
+            LOGGER.debug("DE55: Raw data causing error: %s", binascii.b2a_hex(field_data).decode())
+        # For WARN mode, continue silently (break was already called above)
+        
     return return_values
 
 
