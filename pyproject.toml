@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cardutil"
-version = "0.7.1"
+version = "0.7.2"
 description = "Python package for working with payment card systems"
 readme = "README.rst"
 authors = [
