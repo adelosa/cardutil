@@ -61,6 +61,12 @@ field_processor_config
         field should contain a regex to split the DE43 field up into components. The regex
         groups defined will be added to the returned dictionary. Use Python regex variation.
 
+     For ICC/DE55 processor:
+        field should contain a semicolon-separated key=value string ("k=v;...").
+        Currently only the "on_error" key is recognized (others are ignored). The default is
+        "on_error=WARN". When set to "on_error=ERROR", the DE55 processor raises an exception
+        on malformed data; when set to "on_error=WARN", it logs a warning and stops parsing the
+        remaining TLVs.
 field_python_type
     (optional) When processing between iso and python, determines the python object type.
         * ``string``: default if no type provided
@@ -267,7 +273,7 @@ config = {
             "field_type": "LLLVAR",
             "field_length": 255,
             "field_processor": "ICC",
-            "field_error_handling": "ERROR",  # ERROR (default) or WARN
+            "field_processor_config": "on_error=WARN",
         },
         "62": {
             "field_name": "Additional data 2",
