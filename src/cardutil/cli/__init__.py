@@ -31,7 +31,7 @@ def print_exception_details(err: CardutilError):
 
 def add_version(parser):
     version_text = (f'%(prog)s (cardutil {__version__})\n'
-                    f'(C)Copyright 2019-2023 Anthony Delosa\n')
+                    f'Copyright (c) 2019-2025 Anthony Delosa\n')
 
     parser.add_argument('--version', action='version', version=version_text)
 
