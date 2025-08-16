@@ -253,199 +253,196 @@ class Iso8583TestCase(unittest.TestCase):
     def test_icc_to_dict_error_handling_incomplete_de55(self):
         """Test DE55 with incomplete data (missing length byte)"""
         # DE55 with tag 9F02 but missing length byte
-        incomplete_data = binascii.a2b_hex('9F02')
-        
+        incomplete_data = binascii.a2b_hex("9f02")
+
         # Should raise exception
         with self.assertRaises(CardutilError):
-            _icc_to_dict(incomplete_data) # (error_handling is ERROR by default)
-        
+            _icc_to_dict(incomplete_data, "on_error=ERROR")
+
         # Should work with WARN mode
-        result = _icc_to_dict(incomplete_data, "WARN")
-        self.assertIn('ICC_DATA', result)
-        self.assertNotIn('TAG9F02', result)
-        self.assertEqual(result['ICC_DATA'], '9f02')
+        result = _icc_to_dict(incomplete_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result)
+        self.assertNotIn("TAG9F02", result)
+        self.assertEqual(result["ICC_DATA"], "9f02")
 
     def test_icc_to_dict_error_handling_truncated_de55(self):
         """Test DE55 with truncated data (length says more data than available)"""
         # DE55 with tag 9F02, length=06 but only 2 bytes of data
-        truncated_data = binascii.a2b_hex('9F02060000')
-        
+        truncated_data = binascii.a2b_hex("9f02060000")
+
         # Should raise exception
         with self.assertRaises(CardutilError):
-            _icc_to_dict(truncated_data) # (error_handling is ERROR by default)
-        
+            _icc_to_dict(truncated_data, "on_error=ERROR")
+
         # Should work with WARN mode
-        result = _icc_to_dict(truncated_data, "WARN")
-        self.assertIn('ICC_DATA', result)
-        self.assertNotIn('TAG9F02', result)
-        self.assertEqual(result['ICC_DATA'], '9f02060000')
+        result = _icc_to_dict(truncated_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result)
+        self.assertNotIn("TAG9F02", result)
+        self.assertEqual(result["ICC_DATA"], "9f02060000")
 
     def test_icc_to_dict_error_handling_empty_de55(self):
         """Test with empty DE55 data"""
-        empty_data = b''
+        empty_data = b""
         result = _icc_to_dict(empty_data)
-        
+
         # Should only have ICC_DATA (empty)
-        self.assertIn('ICC_DATA', result)
-        self.assertEqual(result['ICC_DATA'], '')
+        self.assertIn("ICC_DATA", result)
+        self.assertEqual(result["ICC_DATA"], "")
 
     def test_icc_to_dict_error_handling_partial_valid_de55(self):
         """Test DE55 with partially valid data"""
         # Valid tag 9F02, then invalid data (9F03 without length)
-        partial_data = binascii.a2b_hex('9F02060000000010009F03')
-        
+        partial_data = binascii.a2b_hex("9f02060000000010009f03")
+
         # Should raise exception
         with self.assertRaises(CardutilError):
-            _icc_to_dict(partial_data) # (error_handling is ERROR by default)
-        
+            _icc_to_dict(partial_data, "on_error=ERROR")
+
         # Should work with WARN mode
-        result = _icc_to_dict(partial_data, "WARN")
-        self.assertIn('ICC_DATA', result)
-        self.assertIn('TAG9F02', result)
-        self.assertNotIn('TAG9F03', result)
-        self.assertEqual(result['TAG9F02'], '000000001000')
+        result = _icc_to_dict(partial_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result)
+        self.assertIn("TAG9F02", result)
+        self.assertNotIn("TAG9F03", result)
+        self.assertEqual(result["TAG9F02"], "000000001000")
 
     def test_icc_to_dict_error_handling_zero_tag(self):
         """Test that zero tag (0x00) stops processing"""
         # Data with tag 9F02, then 00 tag, then more data (which should be ignored)
-        zero_tag_data = binascii.a2b_hex('9F020600000000100000009F030600000000000000')
+        zero_tag_data = binascii.a2b_hex("9f020600000000100000009f030600000000000000")
         result = _icc_to_dict(zero_tag_data)
-        
+
         # Should have only TAG9F02, processing stops at 00
-        self.assertIn('TAG9F02', result)
-        self.assertNotIn('TAG9F03', result)
-        self.assertEqual(result['TAG9F02'], '000000001000')
+        self.assertIn("TAG9F02", result)
+        self.assertNotIn("TAG9F03", result)
+        self.assertEqual(result["TAG9F02"], "000000001000")
 
     def test_icc_to_dict_error_handling_invalid_de55_no_exception(self):
         """Test that various invalid DE55 formats don't raise exceptions with WARN mode"""
         invalid_cases = [
-            b'',                                   # Empty (valid case, no exception)
-            binascii.a2b_hex('9F'),                # Incomplete 2-byte tag
-            binascii.a2b_hex('9F02'),              # Missing length
-            binascii.a2b_hex('9F0210'),            # Length says 16 bytes but no data
-            binascii.a2b_hex('FF'),                # Single invalid byte
-            binascii.a2b_hex('9F02060000000010009F'),  # 9F tag at end, no length
-            binascii.a2b_hex('9F0206000000001000C1'),  # C1 tag at end, no length
+            b"",  # Empty (valid case, no exception)
+            binascii.a2b_hex("9f"),  # Incomplete 2-byte tag
+            binascii.a2b_hex("9f02"),  # Missing length
+            binascii.a2b_hex("9f0210"),  # Length says 16 bytes but no data
+            binascii.a2b_hex("ff"),  # Single invalid byte
+            binascii.a2b_hex("9f02060000000010009f"),  # 9F tag at end, no length
+            binascii.a2b_hex("9f0206000000001000c1"),  # C1 tag at end, no length
         ]
-        
+
         for i, invalid_data in enumerate(invalid_cases):
             with self.subTest(case=i):
                 # Should not raise any exception with WARN mode
                 try:
-                    result = _icc_to_dict(invalid_data, "WARN")
+                    result = _icc_to_dict(invalid_data, "on_error=WARN")
                     self.assertIsInstance(result, dict)
-                    self.assertIn('ICC_DATA', result)
+                    self.assertIn("ICC_DATA", result)
                 except Exception as e:
                     self.fail(f"Case {i} raised unexpected exception: {e}")
-                
+
                 # Test ERROR mode behavior
                 if i == 0:  # Empty data case - should not raise exception
-                    result = _icc_to_dict(invalid_data)  # (error_handling is ERROR by default)
+                    result = _icc_to_dict(invalid_data, "on_error=ERROR")
                     self.assertIsInstance(result, dict)
-                    self.assertIn('ICC_DATA', result)
-                    self.assertEqual(result['ICC_DATA'], '')
+                    self.assertIn("ICC_DATA", result)
+                    self.assertEqual(result["ICC_DATA"], "")
                 else:  # All other cases should raise exception
                     with self.assertRaises(CardutilError):
-                        _icc_to_dict(invalid_data)
+                        _icc_to_dict(invalid_data, "on_error=ERROR")
 
     def test_icc_to_dict_error_handling_multiple_valid_tags(self):
         """Test extraction of multiple valid EMV tags even with errors"""
         # Multiple valid tags followed by invalid data
         data = binascii.a2b_hex(
-            '9F02060000000010009F03060000000000009F1A0208409F2608'
-            '1234567890ABCDEF82021800950500800000009A03201231'
-            '9C01005F2A0208409F3704AABBCCDD9F'  # Ends with incomplete tag
+            "9f02060000000010009f03060000000000009f1a0208409f2608"
+            "1234567890abcdef82021800950500800000009a03201231"
+            "9c01005f2a0208409f3704aabbccdd9f"  # Ends with incomplete tag
         )
-        
+
         # Should raise exception
         with self.assertRaises(CardutilError):
-            _icc_to_dict(data) # (error_handling is ERROR by default)
-        
+            _icc_to_dict(data, "on_error=ERROR")
+
         # Should work with WARN mode
-        result = _icc_to_dict(data, "WARN")
-        
+        result = _icc_to_dict(data, "on_error=WARN")
+
         # Verify valid tags are extracted despite the error at the end
-        expected_tags = ['TAG9F02', 'TAG9F03', 'TAG9F1A', 'TAG9F26', 
-                        'TAG82', 'TAG95', 'TAG9A', 'TAG9C', 'TAG5F2A', 'TAG9F37']
+        expected_tags = [
+            "TAG9F02",
+            "TAG9F03",
+            "TAG9F1A",
+            "TAG9F26",
+            "TAG82",
+            "TAG95",
+            "TAG9A",
+            "TAG9C",
+            "TAG5F2A",
+            "TAG9F37",
+        ]
         for tag in expected_tags:
             self.assertIn(tag, result, f"Missing {tag}")
-        
+
         # Verify some values
-        self.assertEqual(result['TAG9F02'], '000000001000')
-        self.assertEqual(result['TAG9F26'], '1234567890abcdef')
+        self.assertEqual(result["TAG9F02"], "000000001000")
+        self.assertEqual(result["TAG9F26"], "1234567890abcdef")
 
     def test_icc_to_dict_error_handling_configurable_behavior(self):
         """Test that error handling behavior can be configured"""
         # Test data with incomplete tag at end
-        incomplete_data = binascii.a2b_hex('9F02060000000010009F')
-        
+        incomplete_data = binascii.a2b_hex("9f02060000000010009f")
+
         # Test ERROR behavior
         with self.assertRaises(CardutilError):
-            _icc_to_dict(incomplete_data) # (error_handling is ERROR by default)
-        
+            _icc_to_dict(incomplete_data, "on_error=ERROR")
+
         # Test WARN behavior
-        result_warn = _icc_to_dict(incomplete_data, "WARN")
-        self.assertIn('ICC_DATA', result_warn)
-        self.assertIn('TAG9F02', result_warn)
-        self.assertEqual(result_warn['TAG9F02'], '000000001000')
-        
-
-
-
+        result_warn = _icc_to_dict(incomplete_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result_warn)
+        self.assertIn("TAG9F02", result_warn)
+        self.assertEqual(result_warn["TAG9F02"], "000000001000")
 
     def test_icc_to_dict_error_handling_error_mode(self):
         """Test ERROR mode - should raise exceptions for any error (default behavior)"""
         # Test with various malformed data
         malformed_cases = [
-            (binascii.a2b_hex('9F'), "Incomplete 2-byte tag"),
-            (binascii.a2b_hex('9F02'), "Missing length"),
-            (binascii.a2b_hex('9F02060000'), "Length says 6 but only 2 bytes"),
-            (binascii.a2b_hex('FF'), "Single invalid byte"),
+            (binascii.a2b_hex("9f"), "Incomplete 2-byte tag"),
+            (binascii.a2b_hex("9f02"), "Missing length"),
+            (binascii.a2b_hex("9f02060000"), "Length says 6 but only 2 bytes"),
+            (binascii.a2b_hex("ff"), "Single invalid byte"),
         ]
-        
+
         for i, (malformed_data, description) in enumerate(malformed_cases):
             with self.subTest(case=i, description=description):
                 # Should raise exception
                 with self.assertRaises(CardutilError):
-                    _icc_to_dict(malformed_data, "ERROR")
+                    _icc_to_dict(malformed_data, "on_error=ERROR")
 
     def test_icc_to_dict_error_handling_integration_with_iso8583(self):
-        """Test that error handling configuration works through the full ISO8583 pipeline"""
-        # Create a custom config with WARN error handling for DE55
-        custom_config = {
-            "1": {"field_name": "Bitmap secondary", "field_type": "FIXED", "field_length": 8},
-            "2": {"field_name": "PAN", "field_type": "LLVAR", "field_length": 0},
-            "55": {
-                "field_name": "ICC system related data",
-                "field_type": "LLLVAR",
-                "field_length": 255,
-                "field_processor": "ICC",
-                "field_error_handling": "WARN"  # Override default ERROR to WARN
-            }
-        }
-        
-        # Create a message with only DE2 (valid) to avoid bitmap length issues
-        message_data = (
-            b'0100' +  # MTI
-            b'\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' +  # Bitmap (only bit 2)
-            b'164444555566667777'  # DE2 (valid, 16 chars + 2 length = 18 bytes)
+        """Verify DE55 error handling toggles via field_processor_config through dumps/loads."""
+        # Use repo default bit_config (expected WARN by default)
+        base_bit_cfg = config["bit_config"]
+        malformed_de55 = binascii.a2b_hex("9F")  # incomplete 2-byte tag
+
+        # Default (WARN): should NOT raise
+        msg_warn = dumps(
+            {"MTI": "0100", "DE2": "4444555566667777", "DE55": malformed_de55},
+            iso_config=base_bit_cfg,
         )
-        
-        # Should process without exception
-        result = loads(message_data, iso_config=custom_config)
-        
-        # DE2 should be processed normally
-        self.assertIn('DE2', result)
-        self.assertEqual(result['DE2'], '4444555566667777')
-        
-        # Test DE55 separately with WARN error handling
-        malformed_de55 = binascii.a2b_hex('9F')
-        result_de55 = _icc_to_dict(malformed_de55, "WARN")
-        
-        # Should only contain ICC_DATA, no parsed tags due to WARN mode
-        self.assertIn('ICC_DATA', result_de55)
-        self.assertEqual(result_de55['ICC_DATA'], '9f')
-        self.assertEqual(len(result_de55), 1)
+        out = loads(msg_warn, iso_config=base_bit_cfg)
+        self.assertIn("DE2", out)
+        self.assertEqual(out["DE2"], "4444555566667777")
+        self.assertIn("ICC_DATA", out)
+        self.assertTrue(all(not k.startswith("TAG") for k in out.keys()))
+
+        # Force ERROR without importing copy: shallow copy + copy only "55" sub-dict
+        cfg_error = dict(config["bit_config"])
+        cfg_error["55"] = dict(cfg_error["55"])
+        cfg_error["55"]["field_processor_config"] = "on_error=ERROR"
+
+        msg_error = dumps(
+            {"MTI": "0100", "DE2": "4444555566667777", "DE55": malformed_de55},
+            iso_config=cfg_error,
+        )
+        with self.assertRaises(CardutilError):
+            loads(msg_error, iso_config=cfg_error)
 
     def test_get_de43_fields(self):
         default_processor_config = config['bit_config']['43'].get('field_processor_config')
