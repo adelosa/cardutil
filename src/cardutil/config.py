@@ -307,6 +307,11 @@ config = {
             "field_type": "LLVAR",
             "field_length": 11,
         },
+        "105": {
+            "field_name": "Multi-Use Transaction Identification Data",
+            "field_type": "LLLVAR",
+            "field_length": 0,
+        },
         "111": {
             "field_name": "Amount, currency conversion assignment",
             "field_type": "LLLVAR",
