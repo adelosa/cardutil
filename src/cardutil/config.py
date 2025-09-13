@@ -91,6 +91,32 @@ This config defines the ISO elements that will be present in CSV file output. Is
 
     ["MTI", "DE2", "DE3", "DE4", "DE12", "DE14", "DE22", "DE23", "DE24", "DE25", "DE26"]
 
+PDS Subfield Configuration
+==========================
+
+The config dictionary supports a ``PDS`` key for defining subfield extraction from Mastercard PDS fields. This allows the iso8583 module to parse and expose subfields from PDS fields (e.g., PDS0105) as separate dictionary keys.
+
+.. code-block:: json
+
+    "PDS": {
+        "0105": {
+            "subfields": {
+                "1": {"field_start": 0, "field_name": "File Type", "field_length": 3, "field_python_type": "string"},
+                "2": {"field_start": 3, "field_name": "File Reference Date", "field_length": 6, "field_python_type": "string"},
+                "3": {"field_start": 9, "field_name": "Processor ID", "field_length": 11, "field_python_type": "string"},
+                "4": {"field_start": 20, "field_name": "File Sequence Number", "field_length": 5, "field_python_type": "string"}
+            }
+        }
+    }
+
+Each PDS field (e.g., ``0105``) can define a ``subfields`` dictionary, where each subfield specifies:
+
+- ``field_start``: Start position in the PDS field data
+- ``field_length``: Length of the subfield
+- ``field_name``: Description
+- ``field_python_type``: (optional) Type for conversion (``string``, ``int``, ``decimal``)
+
+When parsing, the iso8583 module will extract these subfields and add them to the output dictionary with keys like ``PDS0105_SF1``, ``PDS0105_SF2``, etc.
 
 mci_parameter_tables
 ====================
@@ -348,47 +374,22 @@ config = {
             "field_length": 0,
         },
     },
-    "output_data_elements": [
-        "MTI",
-        "DE2",
-        "DE3",
-        "DE4",
-        "DE12",
-        "DE14",
-        "DE22",
-        "DE23",
-        "DE24",
-        "DE25",
-        "DE26",
-        "DE30",
-        "DE31",
-        "DE33",
-        "DE37",
-        "DE38",
-        "DE40",
-        "DE41",
-        "DE42",
-        "DE48",
-        "DE49",
-        "DE50",
-        "DE63",
-        "DE71",
-        "DE73",
-        "DE93",
-        "DE94",
-        "DE95",
-        "DE100",
-        "PDS0023",
-        "PDS0052",
-        "PDS0122",
-        "PDS0148",
-        "PDS0158",
-        "PDS0165",
-        "DE43_NAME",
-        "DE43_SUBURB",
-        "DE43_POSTCODE",
-        "ICC_DATA",
-    ],
+    "PDS": {
+        "0001": {
+            "subfields": {
+                "1": {"field_start": 0, "field_name": "Account Number Type", "field_length": 2, "field_python_type": "string"},
+                "2": {"field_start": 2, "field_name": "Account Number", "field_length": 19, "field_python_type": "string"},
+            }
+        },
+        "0105": {
+            "subfields": {
+                "1": {"field_start": 0, "field_name": "File Type", "field_length": 3, "field_python_type": "string"},
+                "2": {"field_start": 3, "field_name": "File Reference Date", "field_length": 6, "field_python_type": "string"},
+                "3": {"field_start": 9, "field_name": "Processor ID", "field_length": 11, "field_python_type": "string"},
+                "4": {"field_start": 20, "field_name": "File Sequence Number", "field_length": 5, "field_python_type": "string"}
+            }
+        },
+    },
     "mci_parameter_tables": {
         "IP0006T1": {
             "card_program_id": {"start": 19, "end": 22},
@@ -460,4 +461,50 @@ config = {
             "life_cycle_indicator": {"start": 35, "end": 36},
         },
     },
+    "output_data_elements": [
+        "MTI",
+        "DE2",
+        "DE3",
+        "DE4",
+        "DE12",
+        "DE14",
+        "DE22",
+        "DE23",
+        "DE24",
+        "DE25",
+        "DE26",
+        "DE30",
+        "DE31",
+        "DE33",
+        "DE37",
+        "DE38",
+        "DE40",
+        "DE41",
+        "DE42",
+        "DE48",
+        "DE49",
+        "DE50",
+        "DE63",
+        "DE71",
+        "DE73",
+        "DE93",
+        "DE94",
+        "DE95",
+        "DE100",
+        "PDS0023",
+        "PDS0052",
+        "PDS0122",
+        "PDS0148",
+        "PDS0158",
+        "PDS0165",
+        # PDS0105 subfields
+        "PDS0105_SF1",
+        "PDS0105_SF2",
+        "PDS0105_SF3",
+        "PDS0105_SF4",
+        "DE43_NAME",
+        "DE43_SUBURB",
+        "DE43_POSTCODE",
+        "ICC_DATA",
+    ],
 }
