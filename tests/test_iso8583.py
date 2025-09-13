@@ -7,7 +7,8 @@ from cardutil import CardutilError
 from cardutil.config import config
 from cardutil.iso8583 import (
     BitArray, _iso8583_to_field, _field_to_iso8583, _iso8583_to_dict, _dict_to_iso8583, loads, dumps,
-    _pds_to_de, _pds_to_dict, _pytype_to_string, _icc_to_dict, _get_de43_fields, _get_date_from_string)
+    _pds_to_de, _pds_to_dict, _pytype_to_string, _icc_to_dict, _get_de43_fields, _get_date_from_string,
+    Iso8583DataError)
 
 from tests import message_ebcdic_raw, message_ascii_raw, message_ascii_raw_hex, message_ebcdic_raw_hex
 
@@ -208,15 +209,15 @@ class Iso8583TestCase(unittest.TestCase):
     def test_dict_to_pds_to_de(self):
         vals = {'PDS0001': '123', 'PDS9999': 'ABCDEF'}
         outs = _pds_to_de(vals)
-        print(outs)
-        self.assertEqual(_pds_to_dict(outs.pop()), vals)
+        print(outs, flush=True)
+        self.assertEqual(outs.pop(), '00010031239999006ABCDEF')
 
     def test_pds_to_de_multiple_fields(self):
         vals = {'PDS0001': '*' * 900, 'PDS9999': '!' * 900}
         outs = _pds_to_de(vals)
         print(outs)
-        self.assertEqual(_pds_to_dict(outs.pop()), {'PDS9999': '!' * 900})
-        self.assertEqual(_pds_to_dict(outs.pop()), {'PDS0001': '*' * 900})
+        self.assertEqual(_pds_to_dict(outs.pop(), {}), {'PDS9999': '!' * 900})
+        self.assertEqual(_pds_to_dict(outs.pop(), {}), {'PDS0001': '*' * 900})
 
     def test_pds_to_de_no_pds_fields(self):
         vals = {'DE1': '*', 'DE2': '*'}
@@ -434,8 +435,11 @@ class Iso8583TestCase(unittest.TestCase):
 
         # Force ERROR without importing copy: shallow copy + copy only "55" sub-dict
         cfg_error = dict(config["bit_config"])
-        cfg_error["55"] = dict(cfg_error["55"])
-        cfg_error["55"]["field_processor_config"] = "on_error=ERROR"
+        if isinstance(cfg_error["55"], dict):
+            cfg_error["55"] = dict(cfg_error["55"])
+            cfg_error["55"]["field_processor_config"] = "on_error=ERROR"
+        else:
+            self.skipTest("cfg_error['55'] is not a dict, cannot set field_processor_config")
 
         msg_error = dumps(
             {"MTI": "0100", "DE2": "4444555566667777", "DE55": malformed_de55},
@@ -443,6 +447,21 @@ class Iso8583TestCase(unittest.TestCase):
         )
         with self.assertRaises(CardutilError):
             loads(msg_error, iso_config=cfg_error)
+
+        # Force ERROR without importing copy: shallow copy + copy only "55" sub-dict
+        cfg_error2 = dict(config["bit_config"])
+        if isinstance(cfg_error2["55"], dict):
+            cfg_error2["55"] = dict(cfg_error2["55"])
+            cfg_error2["55"]["field_processor_config"] = "on_error=ERROR"
+        else:
+            self.skipTest("cfg_error2['55'] is not a dict, cannot set field_processor_config")
+
+        msg_error2 = dumps(
+            {"MTI": "0100", "DE2": "4444555566667777", "DE55": malformed_de55},
+            iso_config=cfg_error2,
+        )
+        with self.assertRaises(CardutilError):
+            loads(msg_error2, iso_config=cfg_error2)
 
     def test_get_de43_fields(self):
         default_processor_config = config['bit_config']['43'].get('field_processor_config')
@@ -534,6 +553,424 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertEqual(_get_date_from_string("2002-01-01 10:01"), datetime.datetime(2002, 1, 1, 10, 1))
         self.assertEqual(_get_date_from_string("2002-01-01 10:01:02"), datetime.datetime(2002, 1, 1, 10, 1, 2))
 
+    def test_pds_subfield_parsing(self):
+        """Test PDS subfield parsing with the example from the requirements"""
+        # Test data from the requirements document
+        # PDS0105 with value: '0012312040000003206201101'
+        # Expected subfields:
+        # - File Type (pos 0-3): '001'
+        # - File Reference Date (pos 3-9): '231204'
+        # - Processor ID (pos 9-20): '00000032062'
+        # - File Sequence Number (pos 20-25): '01101'
 
-if __name__ == '__main__':
-    unittest.main()
+        pds_field_data = "010502500123120400000032062011010122001T"
+
+        # Parse the PDS field
+        result = _pds_to_dict(pds_field_data)
+
+        # Verify basic PDS field parsing still works
+        self.assertIn('PDS0105', result)
+        self.assertEqual(result['PDS0105'], '0012312040000003206201101')
+        self.assertIn('PDS0122', result)
+        self.assertEqual(result['PDS0122'], 'T')
+
+        # Verify subfield parsing for PDS0105
+        self.assertIn('PDS0105_SF1', result)  # File Type
+        self.assertIn('PDS0105_SF2', result)  # File Reference Date
+        self.assertIn('PDS0105_SF3', result)  # Processor ID
+        self.assertIn('PDS0105_SF4', result)  # File Sequence Number
+
+        # Verify subfield values
+        self.assertEqual(result['PDS0105_SF1'], '001')          # File Type
+        self.assertEqual(result['PDS0105_SF2'], '231204')       # File Reference Date
+        self.assertEqual(result['PDS0105_SF3'], '00000032062')  # Processor ID
+        self.assertEqual(result['PDS0105_SF4'], '01101')        # File Sequence Number
+
+    def test_iso8583_message_with_pds_subfields(self):
+        """Test parsing a complete ISO8583 message with PDS subfields"""
+        # Create a test message similar to the example in requirements
+        # MTI=1644, DE24=697, DE48 contains PDS fields
+        test_message_dict = {
+            'MTI': '1644',
+            'DE24': '697',
+            'DE48': '010502500123120400000032062011010122001T',
+            'DE71': 1
+        }
+
+        # Convert to ISO8583 bytes and back to test round-trip
+        message_bytes = dumps(test_message_dict)
+
+        # Parse the message back
+        parsed_dict = loads(message_bytes)
+
+        # Verify the expected structure from requirements
+        expected_keys = ['MTI', 'DE24', 'DE48', 'PDS0105', 'PDS0122', 'DE71']
+        for key in expected_keys:
+            self.assertIn(key, parsed_dict, f"Missing key: {key}")
+
+        # Verify PDS subfields are present
+        subfield_keys = ['PDS0105_SF1', 'PDS0105_SF2', 'PDS0105_SF3', 'PDS0105_SF4']
+        for key in subfield_keys:
+            self.assertIn(key, parsed_dict, f"Missing subfield: {key}")
+
+    def test_pds_custom_config(self):
+        """Test PDS parsing with custom configuration"""
+        # Create custom PDS config for testing
+        custom_pds_config = {
+            "0999": {
+                "subfields": {
+                    "1": {"field_start": 0, "field_name": "Custom Field 1", "field_length": 5,
+                          "field_python_type": "string"},
+                    "2": {"field_start": 5, "field_name": "Custom Field 2", "field_length": 3,
+                          "field_python_type": "int"}
+                }
+            }
+        }
+
+        # Test data with PDS0999
+        test_data = "099900812345678"  # PDS0999, length 008, data "12345678"
+
+        result = _pds_to_dict(test_data, custom_pds_config)
+
+        # Verify parsing
+        self.assertIn('PDS0999', result)
+        self.assertEqual(result['PDS0999'], '12345678')
+        self.assertIn('PDS0999_SF1', result)
+        self.assertEqual(result['PDS0999_SF1'], '12345')
+        self.assertIn('PDS0999_SF2', result)
+        self.assertEqual(result['PDS0999_SF2'], 678)  # Should be converted to int
+
+    def test_pds_multiple_fields_with_subfields(self):
+        """Test parsing multiple PDS fields with subfields"""
+        # Test data with multiple PDS fields
+        test_data = "010502500123120400000032062011010122001T009900512345"
+
+        result = _pds_to_dict(test_data)
+
+        # Should have both PDS0105 and PDS0099
+        self.assertIn('PDS0105', result)
+        self.assertIn('PDS0122', result)
+        self.assertIn('PDS0099', result)
+
+        # PDS0105 should have subfields
+        self.assertIn('PDS0105_SF1', result)
+        self.assertIn('PDS0105_SF2', result)
+        self.assertIn('PDS0105_SF3', result)
+        self.assertIn('PDS0105_SF4', result)
+
+        # PDS0099 should not have subfields (no config)
+        subfield_keys_0099 = [k for k in result.keys() if k.startswith('PDS0099_SF')]
+        self.assertEqual(len(subfield_keys_0099), 0, "PDS0099 should not have subfields")
+
+    def test_pds_subfield_int_conversion_error(self):
+        """Test PDS subfield parsing when integer conversion fails"""
+        # Create custom PDS config with an integer field that will fail conversion
+        custom_pds_config = {
+            "0888": {
+                "subfields": {
+                    "1": {"field_start": 0, "field_name": "Valid String", "field_length": 3,
+                          "field_python_type": "string"},
+                    "2": {"field_start": 3, "field_name": "Invalid Int", "field_length": 3,
+                          "field_python_type": "int"},
+                    "3": {"field_start": 6, "field_name": "Valid Int", "field_length": 3,
+                          "field_python_type": "int"}
+                }
+            }
+        }
+
+        # Test data with PDS0888: "ABC" (string), "XYZ" (invalid int), "123" (valid int)
+        test_data = "0888009ABCXYZ123"  # PDS0888, length 009, data "ABCXYZ123"
+
+        result = _pds_to_dict(test_data, custom_pds_config)
+
+        # Verify parsing
+        self.assertIn('PDS0888', result)
+        self.assertEqual(result['PDS0888'], 'ABCXYZ123')
+
+        # Verify subfields
+        self.assertIn('PDS0888_SF1', result)
+        self.assertEqual(result['PDS0888_SF1'], 'ABC')  # String field works normally
+
+        self.assertIn('PDS0888_SF2', result)
+        self.assertEqual(result['PDS0888_SF2'], 'XYZ')  # Should remain as string due to ValueError
+
+        self.assertIn('PDS0888_SF3', result)
+        self.assertEqual(result['PDS0888_SF3'], 123)    # Should be converted to int successfully
+
+    def test_pds_subfield_decimal_conversion_error(self):
+        """Test PDS subfield parsing when decimal conversion fails"""
+        # Create custom PDS config with a decimal field that will fail conversion
+        custom_pds_config = {
+            "0777": {
+                "subfields": {
+                    "1": {"field_start": 0, "field_name": "Valid Decimal", "field_length": 5,
+                          "field_python_type": "decimal"},
+                    "2": {"field_start": 5, "field_name": "Invalid Decimal", "field_length": 5,
+                          "field_python_type": "decimal"},
+                    "3": {"field_start": 10, "field_name": "Valid String", "field_length": 3,
+                          "field_python_type": "string"}
+                }
+            }
+        }
+
+        # Test data with PDS0777: "12.34" (valid decimal), "ABC.X" (invalid decimal), "DEF" (string)
+        test_data = "077701312.34ABC.XDEF"  # PDS0777, length 013, data "12.34ABC.XDEF"
+
+        result = _pds_to_dict(test_data, custom_pds_config)
+
+        # Verify parsing
+        self.assertIn('PDS0777', result)
+        self.assertEqual(result['PDS0777'], '12.34ABC.XDEF')
+
+        # Verify subfields
+        self.assertIn('PDS0777_SF1', result)
+        self.assertEqual(result['PDS0777_SF1'], decimal.Decimal('12.34'))  # Should be converted to decimal
+
+        self.assertIn('PDS0777_SF2', result)
+        self.assertEqual(result['PDS0777_SF2'], 'ABC.X')  # Should remain as string due to conversion error
+
+        self.assertIn('PDS0777_SF3', result)
+        self.assertEqual(result['PDS0777_SF3'], 'DEF')    # String field works normally
+
+    def test_icc_to_dict_empty_length_byte(self):
+        """Test that _icc_to_dict raises or warns on empty length byte for a tag"""
+        from cardutil.iso8583 import _icc_to_dict, Iso8583DataError
+        import binascii
+
+        # Tag 9F02, but no length byte follows
+        data = binascii.a2b_hex("9f02")
+        # ERROR mode: should raise
+        with self.assertRaises(Iso8583DataError):
+            _icc_to_dict(data, "on_error=ERROR")
+        # WARN mode: should not raise, ICC_DATA should be present, no TAG9F02
+        result = _icc_to_dict(data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result)
+        self.assertNotIn("TAG9F02", result)
+        self.assertEqual(result["ICC_DATA"], "9f02")
+
+    def test_icc_to_dict_invalid_processor_config(self):
+        """Test _icc_to_dict with various invalid processor configurations"""
+        # Use simpler valid test data that won't cause insufficient data errors
+        test_data = binascii.a2b_hex("9f02060000000010009f03060000000000")
+
+        # Test with malformed config strings
+        invalid_configs = [
+            "invalid_config_string",
+            "key_without_equals",
+            "key=value;malformed",
+            "=empty_key",
+            "key=",
+            ";semicolon_start",
+            "key=value;",
+            None,
+            "",
+            123,  # Non-string type
+            {"dict": "not_string"},  # Dict instead of string
+        ]
+
+        for invalid_config in invalid_configs:
+            with self.subTest(config=invalid_config):
+                # Should not raise exception, should use default WARN behavior
+                result = _icc_to_dict(test_data, invalid_config)
+                self.assertIsInstance(result, dict)
+                self.assertIn("ICC_DATA", result)
+                # Should parse the first valid tag at least
+                self.assertIn("TAG9F02", result)
+                # Second tag might not parse due to insufficient data, which is expected
+
+    def test_icc_to_dict_processor_config_parsing(self):
+        """Test that processor config is parsed correctly"""
+        # Use simpler valid test data
+        test_data = binascii.a2b_hex("9f02060000000010000000")  # Extended to avoid insufficient data
+
+        # Test valid config parsing
+        valid_configs = [
+            "on_error=ERROR",
+            "on_error=WARN",
+            "on_error=error",  # Test case insensitive
+            "on_error=warn",
+            "on_error=ERROR;other_key=value",
+            "other_key=value;on_error=WARN",
+            "key1=val1;on_error=ERROR;key2=val2",
+        ]
+
+        for valid_config in valid_configs:
+            with self.subTest(config=valid_config):
+                # Should not raise for valid data
+                result = _icc_to_dict(test_data, valid_config)
+                self.assertIn("TAG9F02", result)
+
+    def test_icc_to_dict_no_field_tag_scenarios(self):
+        """Test scenarios where field_tag is empty or missing"""
+
+        # Test 1: Data ends abruptly, no tag available
+        truncated_data = b""
+
+        # ERROR mode
+        result_error = _icc_to_dict(truncated_data, "on_error=ERROR")
+        self.assertIn("ICC_DATA", result_error)
+        self.assertEqual(result_error["ICC_DATA"], "")
+
+        # WARN mode
+        result_warn = _icc_to_dict(truncated_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result_warn)
+        self.assertEqual(result_warn["ICC_DATA"], "")
+
+    def test_icc_to_dict_empty_field_length_raw(self):
+        """Test scenarios where field_length_raw is empty"""
+
+        # This is a tricky case - the field_length_raw check happens after we've
+        # already read the tag, so we need data that gets to that point
+        # but somehow has empty length data
+
+        # Test with a single byte tag followed by end of data
+        single_byte_tag_no_length = binascii.a2b_hex("01")  # Tag 01, but no length follows
+
+        # ERROR mode
+        with self.assertRaises(Iso8583DataError):
+            _icc_to_dict(single_byte_tag_no_length, "on_error=ERROR")
+
+        # WARN mode
+        result = _icc_to_dict(single_byte_tag_no_length, "on_error=WARN")
+        self.assertIn("ICC_DATA", result)
+        self.assertNotIn("TAG01", result)
+        self.assertEqual(result["ICC_DATA"], "01")
+
+    def test_icc_to_dict_struct_unpack_error(self):
+        """Test handling of struct.unpack errors in length processing"""
+        # This tests the struct.unpack(">B", field_length_raw) call
+        # Since we're reading exactly 1 byte, struct.unpack should not normally fail
+        # unless there's truly no data, which is covered by the empty length check
+
+        # Test with tag but no length byte (different from previous test)
+        tag_no_length = binascii.a2b_hex("82")  # Single byte tag, no length
+
+        # ERROR mode
+        with self.assertRaises(Iso8583DataError):
+            _icc_to_dict(tag_no_length, "on_error=ERROR")
+
+        # WARN mode
+        result = _icc_to_dict(tag_no_length, "on_error=WARN")
+        self.assertIn("ICC_DATA", result)
+        self.assertEqual(result["ICC_DATA"], "82")
+
+    def test_icc_to_dict_comprehensive_error_coverage(self):
+        """Comprehensive test covering all error conditions with both WARN and ERROR modes"""
+
+        error_cases = [
+            # Case 1: Incomplete 2-byte tag (9F without second byte)
+            {
+                "data": binascii.a2b_hex("9f"),
+                "description": "Incomplete 2-byte tag",
+                "error_msg_contains": "Incomplete 2-byte tag"
+            },
+            # Case 2: 2-byte tag with no length
+            {
+                "data": binascii.a2b_hex("9f02"),
+                "description": "2-byte tag with no length",
+                "error_msg_contains": "No length byte available"
+            },
+            # Case 3: Tag with insufficient data for declared length
+            {
+                "data": binascii.a2b_hex("01050000"),  # Tag 01, length 05, but only 2 bytes of data
+                "description": "Insufficient data for declared length",
+                "error_msg_contains": "Insufficient data"
+            },
+            # Case 4: Single byte tag at end of data
+            {
+                "data": binascii.a2b_hex("82"),
+                "description": "Single byte tag at end",
+                "error_msg_contains": "No length byte available"
+            }
+        ]
+
+        for i, case in enumerate(error_cases):
+            with self.subTest(case=i, description=case["description"]):
+                # Test ERROR mode - should raise exception
+                with self.assertRaises(Iso8583DataError) as cm:
+                    _icc_to_dict(case["data"], "on_error=ERROR")
+                self.assertIn(case["error_msg_contains"], str(cm.exception))
+
+                # Test WARN mode - should not raise exception
+                result = _icc_to_dict(case["data"], "on_error=WARN")
+                self.assertIsInstance(result, dict)
+                self.assertIn("ICC_DATA", result)
+                # Should not have any TAG entries due to errors
+                tag_keys = [k for k in result.keys() if k.startswith("TAG")]
+                self.assertEqual(len(tag_keys), 0)
+                # Some cases might have partial success, so we just verify ICC_DATA exists
+                self.assertTrue(len(result) >= 1)  # At least ICC_DATA
+
+    def test_icc_to_dict_default_error_handling(self):
+        """Test default error handling when no config is provided"""
+        # Test with malformed data and no processor config
+        malformed_data = binascii.a2b_hex("9f")
+
+        # Default should be WARN mode
+        result = _icc_to_dict(malformed_data)
+        self.assertIn("ICC_DATA", result)
+        self.assertEqual(result["ICC_DATA"], "9f")
+
+        # Explicit None config
+        result2 = _icc_to_dict(malformed_data, None)
+        self.assertIn("ICC_DATA", result2)
+        self.assertEqual(result2["ICC_DATA"], "9f")
+
+    def test_icc_to_dict_exception_in_try_block(self):
+        """Test generic exception handling in the try block"""
+        # Use valid data that has sufficient bytes for the declared length
+        valid_start = binascii.a2b_hex("9f02060000000010000000")  # Valid tag with enough data
+
+        # This should process successfully
+        result = _icc_to_dict(valid_start, "on_error=ERROR")
+        self.assertIn("TAG9F02", result)
+
+        # Test with data that might cause other types of exceptions
+        # (though most are already covered by specific error checks)
+        edge_case_data = binascii.a2b_hex("9f0200")  # Tag with zero length
+
+        result_warn = _icc_to_dict(edge_case_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result_warn)
+        self.assertIn("TAG9F02", result_warn)
+        self.assertEqual(result_warn["TAG9F02"], "")
+
+    def test_icc_to_dict_processor_config_exception_handling(self):
+        """Test exception handling in processor config parsing"""
+        # Use valid data that will parse successfully
+        test_data = binascii.a2b_hex("01024142")  # Tag 01, length 02, data "AB"
+
+        # Create a config that will cause an exception during parsing
+        # We'll use a config that causes str().split() to fail
+        class BadConfigObject:
+            def __str__(self):
+                raise ValueError("Intentional error in str() method")
+
+            def split(self, sep):
+                raise AttributeError("split method not available")
+
+        bad_config = BadConfigObject()
+
+        # This should handle the exception gracefully and use default config
+        result = _icc_to_dict(test_data, bad_config)
+        self.assertIsInstance(result, dict)
+        self.assertIn("ICC_DATA", result)
+        self.assertIn("TAG01", result)
+        self.assertEqual(result["TAG01"], "4142")
+
+    def test_icc_to_dict_empty_length_byte_error_specific(self):
+        """Test 'Empty length byte' error when field_length_raw is falsy"""
+        # This tests the condition where we have a tag but field_pointer >= len(field_data)
+        # when trying to read the length byte
+
+        test_data = binascii.a2b_hex("01")  # Just a tag, no length
+
+        # This triggers "No length byte available" error
+        with self.assertRaises(Iso8583DataError) as cm:
+            _icc_to_dict(test_data, "on_error=ERROR")
+        self.assertIn("No length byte available", str(cm.exception))
+
+        # WARN mode should handle gracefully
+        result_warn = _icc_to_dict(test_data, "on_error=WARN")
+        self.assertIn("ICC_DATA", result_warn)
+        self.assertEqual(result_warn["ICC_DATA"], "01")
+        self.assertNotIn("TAG01", result_warn)

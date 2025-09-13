@@ -434,8 +434,7 @@ def _get_date_from_string(field_data: str) -> datetime:
         LOGGER.debug('Using dateutil parser')
         return parser.parse(field_data)
     except ImportError:
-        pass
-
+        parser = None
     if sys.version_info >= (3, 7):
         LOGGER.debug('Using fromisoformat')
         return datetime.datetime.fromisoformat(field_data)
@@ -520,13 +519,20 @@ def _pds_to_de(dict_values):
     return outputs
 
 
-def _pds_to_dict(field_data):
+def _pds_to_dict(field_data, pds_config=None):
     """
     Get MasterCard pds fields from iso field
 
     :param field_data: the ISO8583 field containing pds fields
+    :param pds_config: optional PDS configuration for subfield parsing
     :return: dictionary of pds key values. Key in the form PDSxxxx where x is zero filled number of pds
     """
+    from cardutil.config import config as default_config
+
+    # Use provided config or default
+    if pds_config is None:
+        pds_config = default_config.get('PDS', {})
+
     field_pointer = 0
     return_values = {}
 
@@ -542,7 +548,15 @@ def _pds_to_dict(field_data):
         # get the pds data
         pds_field_data = field_data[field_pointer+7:field_pointer+7+pds_field_length]
         LOGGER.debug("pds_field_data=[%s]", str(pds_field_data))
-        return_values["PDS" + pds_field_tag] = pds_field_data
+
+        pds_key = "PDS" + pds_field_tag
+        return_values[pds_key] = pds_field_data
+
+        # Parse subfields if configuration exists for this PDS field
+        if pds_field_tag in pds_config and 'subfields' in pds_config[pds_field_tag]:
+            subfield_config = pds_config[pds_field_tag]['subfields']
+            subfields = _parse_pds_subfields(pds_field_data, subfield_config, pds_field_tag)
+            return_values.update(subfields)
 
         # increment the fieldPointer
         field_pointer += 7+pds_field_length
@@ -569,7 +583,7 @@ def _icc_to_dict(field_data, processor_config=None):
                     processor_config_dict[k.strip()] = v.strip()
         except Exception:
             processor_config_dict = {}
-    
+
     # Get error handling configuration from bit_config.
     DEFAULT_ERROR_HANDLING = 'WARN'
     on_error = (processor_config_dict.get('on_error') or DEFAULT_ERROR_HANDLING).upper()
@@ -583,14 +597,7 @@ def _icc_to_dict(field_data, processor_config=None):
         while field_pointer < len(field_data):
             # get the tag id (one byte)
             field_tag = field_data[field_pointer:field_pointer+1]
-            
-            # Check if there's data to read
-            if not field_tag:
-                if on_error == "ERROR":
-                    raise Iso8583DataError("DE55: No more data to read at position %d" % field_pointer)
-                LOGGER.warning("DE55: No more data to read at position %d", field_pointer)
-                break
-                
+
             # set to 2 bytes if 2 byte tag
             if field_tag in TWO_BYTE_TAG_PREFIXES:
                 # Check if there's enough data for 2-byte tag
@@ -619,17 +626,10 @@ def _icc_to_dict(field_data, processor_config=None):
                 LOGGER.warning("DE55: No length byte available for tag %s at position %d",
                                field_tag_display, field_pointer)
                 break
-                
+
             field_length_raw = field_data[field_pointer:field_pointer+1]
             LOGGER.debug(f"{field_length_raw=}")
-            
-            # Check if we got any data
-            if not field_length_raw:
-                if on_error == "ERROR":
-                    raise Iso8583DataError("DE55: Empty length byte for tag %s" % field_tag_display)
-                LOGGER.warning("DE55: Empty length byte for tag %s", field_tag_display)
-                break
-                
+
             field_length = struct.unpack(">B", field_length_raw)[0]
 
             LOGGER.debug("%s", format(field_tag_display))
@@ -688,6 +688,50 @@ def _get_de43_fields(de43_field, processor_config=None):
     return field_dict
 
 
-if __name__ == '__main__':
+def _parse_pds_subfields(pds_field_data, subfield_config, pds_field_tag):
+    """
+    Parse PDS subfields from PDS field data
+
+    :param pds_field_data: the raw PDS field data
+    :param subfield_config: dictionary containing subfield configuration
+    :param pds_field_tag: the PDS field tag (e.g., "0105")
+    :return: dictionary with subfield keys in format PDS<field_tag>_SF<subfield_number>
+    """
+    subfields = {}
+
+    for sf_num, sf_config in subfield_config.items():
+        field_start = sf_config.get('field_start', 0)
+        field_length = sf_config.get('field_length', 0)
+        field_python_type = sf_config.get('field_python_type', 'string')
+
+        # Extract the subfield data
+        field_end = field_start + field_length
+        if field_end <= len(pds_field_data):
+            subfield_data = pds_field_data[field_start:field_end]
+
+            # Convert to the appropriate python type
+            if field_python_type == 'int':
+                try:
+                    subfield_data = int(subfield_data)
+                except ValueError:
+                    # Keep as string if conversion fails
+                    pass
+            elif field_python_type == 'decimal':
+                try:
+                    subfield_data = decimal.Decimal(subfield_data)
+                except (ValueError, decimal.InvalidOperation):
+                    # Keep as string if conversion fails
+                    pass
+
+            # Create the subfield key
+            subfield_key = f"PDS{pds_field_tag}_SF{sf_num}"
+            subfields[subfield_key] = subfield_data
+
+            LOGGER.debug("Parsed subfield %s = %s", subfield_key, subfield_data)
+
+    return subfields
+
+
+if __name__ == '__main__':  # pragma: no cover
     import doctest
     doctest.testmod()
