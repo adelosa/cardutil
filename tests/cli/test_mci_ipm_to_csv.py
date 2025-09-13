@@ -88,7 +88,6 @@ class MciIpmToCsvTestCase(unittest.TestCase):
             csv_output = csv_data.read()
 
         self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
-
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
 
@@ -165,7 +164,6 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         self.assertEqual(-1, result)
         print(output)
 
-
     def test_ipm_to_csv_invalid_file(self):
         """
         Check that detected as invalid IPM file
@@ -186,6 +184,7 @@ class MciIpmToCsvTestCase(unittest.TestCase):
         os.remove(in_ipm_name + '.csv')
         self.assertEqual(-1, result)
         print(output)
+
 
 if __name__ == '__main__':
     unittest.main()

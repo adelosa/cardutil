@@ -94,7 +94,9 @@ This config defines the ISO elements that will be present in CSV file output. Is
 PDS Subfield Configuration
 ==========================
 
-The config dictionary supports a ``PDS`` key for defining subfield extraction from Mastercard PDS fields. This allows the iso8583 module to parse and expose subfields from PDS fields (e.g., PDS0105) as separate dictionary keys.
+The config dictionary supports a ``PDS`` key for defining subfield extraction from Mastercard PDS fields.
+This allows the iso8583 module to parse and expose subfields from PDS fields (e.g., PDS0105) as separate dictionary
+keys.
 
 .. code-block:: json
 
@@ -102,9 +104,12 @@ The config dictionary supports a ``PDS`` key for defining subfield extraction fr
         "0105": {
             "subfields": {
                 "1": {"field_start": 0, "field_name": "File Type", "field_length": 3, "field_python_type": "string"},
-                "2": {"field_start": 3, "field_name": "File Reference Date", "field_length": 6, "field_python_type": "string"},
-                "3": {"field_start": 9, "field_name": "Processor ID", "field_length": 11, "field_python_type": "string"},
-                "4": {"field_start": 20, "field_name": "File Sequence Number", "field_length": 5, "field_python_type": "string"}
+                "2": {"field_start": 3, "field_name": "File Reference Date", "field_length": 6,
+                      "field_python_type": "string"},
+                "3": {"field_start": 9, "field_name": "Processor ID", "field_length": 11,
+                      "field_python_type": "string"},
+                "4": {"field_start": 20, "field_name": "File Sequence Number", "field_length": 5,
+                      "field_python_type": "string"}
             }
         }
     }
@@ -116,7 +121,8 @@ Each PDS field (e.g., ``0105``) can define a ``subfields`` dictionary, where eac
 - ``field_name``: Description
 - ``field_python_type``: (optional) Type for conversion (``string``, ``int``, ``decimal``)
 
-When parsing, the iso8583 module will extract these subfields and add them to the output dictionary with keys like ``PDS0105_SF1``, ``PDS0105_SF2``, etc.
+When parsing, the iso8583 module will extract these subfields and add them to the output dictionary with keys like
+``PDS0105_SF1``, ``PDS0105_SF2``, etc.
 
 mci_parameter_tables
 ====================
@@ -265,8 +271,10 @@ config = {
             "field_type": "LLVAR",
             "field_length": 0,
             "field_processor": "DE43",
-            "field_processor_config": r"(?P<DE43_NAME>.+?) *\\(?P<DE43_ADDRESS>.+?) *\\(?P<DE43_SUBURB>.+?) *\\"
-            r"(?P<DE43_POSTCODE>.{10})(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>\S{3})$",
+            "field_processor_config": (
+                r"(?P<DE43_NAME>.+?) *\\(?P<DE43_ADDRESS>.+?) *\\(?P<DE43_SUBURB>.+?) *\\"
+                r"(?P<DE43_POSTCODE>.{10})(?P<DE43_STATE>.{3})(?P<DE43_COUNTRY>\S{3})$"
+            ),
         },
         "48": {
             "field_name": "Additional data",
@@ -377,16 +385,46 @@ config = {
     "PDS": {
         "0001": {
             "subfields": {
-                "1": {"field_start": 0, "field_name": "Account Number Type", "field_length": 2, "field_python_type": "string"},
-                "2": {"field_start": 2, "field_name": "Account Number", "field_length": 19, "field_python_type": "string"},
+                "1": {
+                    "field_start": 0,
+                    "field_name": "Account Number Type",
+                    "field_length": 2,
+                    "field_python_type": "string",
+                },
+                "2": {
+                    "field_start": 2,
+                    "field_name": "Account Number",
+                    "field_length": 19,
+                    "field_python_type": "string",
+                },
             }
         },
         "0105": {
             "subfields": {
-                "1": {"field_start": 0, "field_name": "File Type", "field_length": 3, "field_python_type": "string"},
-                "2": {"field_start": 3, "field_name": "File Reference Date", "field_length": 6, "field_python_type": "string"},
-                "3": {"field_start": 9, "field_name": "Processor ID", "field_length": 11, "field_python_type": "string"},
-                "4": {"field_start": 20, "field_name": "File Sequence Number", "field_length": 5, "field_python_type": "string"}
+                "1": {
+                    "field_start": 0,
+                    "field_name": "File Type",
+                    "field_length": 3,
+                    "field_python_type": "string",
+                },
+                "2": {
+                    "field_start": 3,
+                    "field_name": "File Reference Date",
+                    "field_length": 6,
+                    "field_python_type": "string",
+                },
+                "3": {
+                    "field_start": 9,
+                    "field_name": "Processor ID",
+                    "field_length": 11,
+                    "field_python_type": "string",
+                },
+                "4": {
+                    "field_start": 20,
+                    "field_name": "File Sequence Number",
+                    "field_length": 5,
+                    "field_python_type": "string",
+                }
             }
         },
     },
