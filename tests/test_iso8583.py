@@ -435,8 +435,11 @@ class Iso8583TestCase(unittest.TestCase):
 
         # Force ERROR without importing copy: shallow copy + copy only "55" sub-dict
         cfg_error = dict(config["bit_config"])
-        cfg_error["55"] = dict(cfg_error["55"])
-        cfg_error["55"]["field_processor_config"] = "on_error=ERROR"
+        if isinstance(cfg_error["55"], dict):
+            cfg_error["55"] = dict(cfg_error["55"])
+            cfg_error["55"]["field_processor_config"] = "on_error=ERROR"
+        else:
+            self.skipTest("cfg_error['55'] is not a dict, cannot set field_processor_config")
 
         msg_error = dumps(
             {"MTI": "0100", "DE2": "4444555566667777", "DE55": malformed_de55},
@@ -444,6 +447,21 @@ class Iso8583TestCase(unittest.TestCase):
         )
         with self.assertRaises(CardutilError):
             loads(msg_error, iso_config=cfg_error)
+
+        # Force ERROR without importing copy: shallow copy + copy only "55" sub-dict
+        cfg_error2 = dict(config["bit_config"])
+        if isinstance(cfg_error2["55"], dict):
+            cfg_error2["55"] = dict(cfg_error2["55"])
+            cfg_error2["55"]["field_processor_config"] = "on_error=ERROR"
+        else:
+            self.skipTest("cfg_error2['55'] is not a dict, cannot set field_processor_config")
+
+        msg_error2 = dumps(
+            {"MTI": "0100", "DE2": "4444555566667777", "DE55": malformed_de55},
+            iso_config=cfg_error2,
+        )
+        with self.assertRaises(CardutilError):
+            loads(msg_error2, iso_config=cfg_error2)
 
     def test_get_de43_fields(self):
         default_processor_config = config['bit_config']['43'].get('field_processor_config')
@@ -563,10 +581,10 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertIn('PDS0105_SF4', result)  # File Sequence Number
 
         # Verify subfield values
-        self.assertEqual(result['PDS0105_SF1'], '001')        # File Type
-        self.assertEqual(result['PDS0105_SF2'], '231204')     # File Reference Date
-        self.assertEqual(result['PDS0105_SF3'], '00000032062') # Processor ID
-        self.assertEqual(result['PDS0105_SF4'], '01101')      # File Sequence Number
+        self.assertEqual(result['PDS0105_SF1'], '001')          # File Type
+        self.assertEqual(result['PDS0105_SF2'], '231204')       # File Reference Date
+        self.assertEqual(result['PDS0105_SF3'], '00000032062')  # Processor ID
+        self.assertEqual(result['PDS0105_SF4'], '01101')        # File Sequence Number
 
     def test_iso8583_message_with_pds_subfields(self):
         """Test parsing a complete ISO8583 message with PDS subfields"""
@@ -601,8 +619,10 @@ class Iso8583TestCase(unittest.TestCase):
         custom_pds_config = {
             "0999": {
                 "subfields": {
-                    "1": {"field_start": 0, "field_name": "Custom Field 1", "field_length": 5, "field_python_type": "string"},
-                    "2": {"field_start": 5, "field_name": "Custom Field 2", "field_length": 3, "field_python_type": "int"}
+                    "1": {"field_start": 0, "field_name": "Custom Field 1", "field_length": 5,
+                          "field_python_type": "string"},
+                    "2": {"field_start": 5, "field_name": "Custom Field 2", "field_length": 3,
+                          "field_python_type": "int"}
                 }
             }
         }
@@ -648,9 +668,12 @@ class Iso8583TestCase(unittest.TestCase):
         custom_pds_config = {
             "0888": {
                 "subfields": {
-                    "1": {"field_start": 0, "field_name": "Valid String", "field_length": 3, "field_python_type": "string"},
-                    "2": {"field_start": 3, "field_name": "Invalid Int", "field_length": 3, "field_python_type": "int"},
-                    "3": {"field_start": 6, "field_name": "Valid Int", "field_length": 3, "field_python_type": "int"}
+                    "1": {"field_start": 0, "field_name": "Valid String", "field_length": 3,
+                          "field_python_type": "string"},
+                    "2": {"field_start": 3, "field_name": "Invalid Int", "field_length": 3,
+                          "field_python_type": "int"},
+                    "3": {"field_start": 6, "field_name": "Valid Int", "field_length": 3,
+                          "field_python_type": "int"}
                 }
             }
         }
@@ -680,9 +703,12 @@ class Iso8583TestCase(unittest.TestCase):
         custom_pds_config = {
             "0777": {
                 "subfields": {
-                    "1": {"field_start": 0, "field_name": "Valid Decimal", "field_length": 5, "field_python_type": "decimal"},
-                    "2": {"field_start": 5, "field_name": "Invalid Decimal", "field_length": 5, "field_python_type": "decimal"},
-                    "3": {"field_start": 10, "field_name": "Valid String", "field_length": 3, "field_python_type": "string"}
+                    "1": {"field_start": 0, "field_name": "Valid Decimal", "field_length": 5,
+                          "field_python_type": "decimal"},
+                    "2": {"field_start": 5, "field_name": "Invalid Decimal", "field_length": 5,
+                          "field_python_type": "decimal"},
+                    "3": {"field_start": 10, "field_name": "Valid String", "field_length": 3,
+                          "field_python_type": "string"}
                 }
             }
         }
@@ -742,10 +768,10 @@ class Iso8583TestCase(unittest.TestCase):
             {"dict": "not_string"},  # Dict instead of string
         ]
 
-        for config in invalid_configs:
-            with self.subTest(config=config):
+        for invalid_config in invalid_configs:
+            with self.subTest(config=invalid_config):
                 # Should not raise exception, should use default WARN behavior
-                result = _icc_to_dict(test_data, config)
+                result = _icc_to_dict(test_data, invalid_config)
                 self.assertIsInstance(result, dict)
                 self.assertIn("ICC_DATA", result)
                 # Should parse the first valid tag at least
@@ -768,10 +794,10 @@ class Iso8583TestCase(unittest.TestCase):
             "key1=val1;on_error=ERROR;key2=val2",
         ]
 
-        for config in valid_configs:
-            with self.subTest(config=config):
+        for valid_config in valid_configs:
+            with self.subTest(config=valid_config):
                 # Should not raise for valid data
-                result = _icc_to_dict(test_data, config)
+                result = _icc_to_dict(test_data, valid_config)
                 self.assertIn("TAG9F02", result)
 
     def test_icc_to_dict_no_field_tag_scenarios(self):
@@ -871,6 +897,7 @@ class Iso8583TestCase(unittest.TestCase):
                 self.assertIn("ICC_DATA", result)
                 # Should not have any TAG entries due to errors
                 tag_keys = [k for k in result.keys() if k.startswith("TAG")]
+                self.assertEqual(len(tag_keys), 0)
                 # Some cases might have partial success, so we just verify ICC_DATA exists
                 self.assertTrue(len(result) >= 1)  # At least ICC_DATA
 
@@ -947,4 +974,3 @@ class Iso8583TestCase(unittest.TestCase):
         self.assertIn("ICC_DATA", result_warn)
         self.assertEqual(result_warn["ICC_DATA"], "01")
         self.assertNotIn("TAG01", result_warn)
-

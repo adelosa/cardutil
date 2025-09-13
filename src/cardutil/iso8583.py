@@ -434,8 +434,7 @@ def _get_date_from_string(field_data: str) -> datetime:
         LOGGER.debug('Using dateutil parser')
         return parser.parse(field_data)
     except ImportError:
-        pass
-
+        parser = None
     if sys.version_info >= (3, 7):
         LOGGER.debug('Using fromisoformat')
         return datetime.datetime.fromisoformat(field_data)
@@ -584,7 +583,7 @@ def _icc_to_dict(field_data, processor_config=None):
                     processor_config_dict[k.strip()] = v.strip()
         except Exception:
             processor_config_dict = {}
-    
+
     # Get error handling configuration from bit_config.
     DEFAULT_ERROR_HANDLING = 'WARN'
     on_error = (processor_config_dict.get('on_error') or DEFAULT_ERROR_HANDLING).upper()
@@ -598,7 +597,7 @@ def _icc_to_dict(field_data, processor_config=None):
         while field_pointer < len(field_data):
             # get the tag id (one byte)
             field_tag = field_data[field_pointer:field_pointer+1]
-            
+
             # set to 2 bytes if 2 byte tag
             if field_tag in TWO_BYTE_TAG_PREFIXES:
                 # Check if there's enough data for 2-byte tag
@@ -627,10 +626,10 @@ def _icc_to_dict(field_data, processor_config=None):
                 LOGGER.warning("DE55: No length byte available for tag %s at position %d",
                                field_tag_display, field_pointer)
                 break
-                
+
             field_length_raw = field_data[field_pointer:field_pointer+1]
             LOGGER.debug(f"{field_length_raw=}")
-            
+
             field_length = struct.unpack(">B", field_length_raw)[0]
 
             LOGGER.debug("%s", format(field_tag_display))
