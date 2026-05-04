@@ -34,7 +34,8 @@ test = [
   "bump2version",
   "coverage",
   "cryptography",
-  "python-dateutil"
+  "python-dateutil",
+  "nox"
 ]
 crypto = [
   "cryptography >= 44"
