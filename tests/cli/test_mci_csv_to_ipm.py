@@ -108,14 +108,16 @@ class MciCsvToIpmTestCase(unittest.TestCase):
 
     def test_csv_to_ipm_with_output_filename(self):
         in_csv_data = 'MTI,DE2,DE4\n0100,1111222233334444,100'
-        out_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        recs = self.run_cli_with_csv(in_csv_data, out_filename=out_file.name)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_file:
+            out_filename = out_file.name
+        recs = self.run_cli_with_csv(in_csv_data, out_filename=out_filename)
         print(recs)
 
     def test_csv_to_ipm_with_debug(self):
         in_csv_data = 'MTI,DE2,DE4\n0100,1111222233334444,100'
-        out_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-        recs = self.run_cli_with_csv(in_csv_data, out_filename=out_file.name, debug=True)
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as out_file:
+            out_filename = out_file.name
+        recs = self.run_cli_with_csv(in_csv_data, out_filename=out_filename, debug=True)
         print(recs)
 
     def test_csv_to_ipm_has_DE48_only(self):

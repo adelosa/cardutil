@@ -1,12 +1,11 @@
 from binascii import unhexlify, hexlify
 from cryptography.hazmat.primitives.ciphers import Cipher, modes
 from cryptography.hazmat.decrepit.ciphers import algorithms as d_algorithms
-from cryptography.hazmat.backends import default_backend
 
-backend = default_backend()
+from cardutil._crypto import normalize_tdes_key
 
 
-def get_zone_master_key(*key_parts: str) -> (str, str):
+def get_zone_master_key(*key_parts: str) -> tuple[str, str]:
     """
     combine keys components to get clear key
 
@@ -22,7 +21,7 @@ def get_zone_master_key(*key_parts: str) -> (str, str):
     return p1, kcv
 
 
-def get_enc_zone_master_key(master_key: str, *key_parts: str) -> (str, str):
+def get_enc_zone_master_key(master_key: str, *key_parts: str) -> tuple[str, str]:
     plain_key, kcv = get_zone_master_key(*key_parts)
     enc_key = encrypt_key(plain_key, master_key)
     return hexlify(enc_key).decode(), kcv
@@ -36,16 +35,16 @@ def calculate_kcv(binary_key: bytes, kvc_length: int = 6) -> str:
     :param kvc_length: length of kvc value: default is 6
     :return: key check value
     """
-    cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
+    cipher = Cipher(d_algorithms.TripleDES(normalize_tdes_key(binary_key)), modes.ECB())
     encryptor = cipher.encryptor()
     ct = encryptor.update(b'\x00' * 16) + encryptor.finalize()
     return hexlify(ct)[0:kvc_length].decode()
 
 
 def encrypt_key(key_to_encrypt: str, master_key: str) -> bytes:
-    binary_key = unhexlify(master_key)
+    binary_key = normalize_tdes_key(unhexlify(master_key))
     binary_data = unhexlify(key_to_encrypt)
-    cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB(), backend=backend)
+    cipher = Cipher(d_algorithms.TripleDES(binary_key), modes.ECB())
     encryptor = cipher.encryptor()
     return encryptor.update(binary_data) + encryptor.finalize()
 
