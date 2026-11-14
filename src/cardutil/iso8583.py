@@ -584,6 +584,7 @@ def _icc_to_dict(field_data, processor_config=None):
         except Exception:
             processor_config_dict = {}
 
+
     # Get error handling configuration from bit_config.
     DEFAULT_ERROR_HANDLING = 'WARN'
     on_error = (processor_config_dict.get('on_error') or DEFAULT_ERROR_HANDLING).upper()
@@ -597,6 +598,13 @@ def _icc_to_dict(field_data, processor_config=None):
         while field_pointer < len(field_data):
             # get the tag id (one byte)
             field_tag = field_data[field_pointer:field_pointer+1]
+
+            # Check if there's data to read
+            if not field_tag:
+                if on_error == "ERROR":
+                    raise Iso8583DataError("DE55: No more data to read at position %d" % field_pointer)
+                LOGGER.warning("DE55: No more data to read at position %d", field_pointer)
+                break
 
             # set to 2 bytes if 2 byte tag
             if field_tag in TWO_BYTE_TAG_PREFIXES:
@@ -629,6 +637,13 @@ def _icc_to_dict(field_data, processor_config=None):
 
             field_length_raw = field_data[field_pointer:field_pointer+1]
             LOGGER.debug(f"{field_length_raw=}")
+
+            # Check if we got any data
+            if not field_length_raw:
+                if on_error == "ERROR":
+                    raise Iso8583DataError("DE55: Empty length byte for tag %s" % field_tag_display)
+                LOGGER.warning("DE55: Empty length byte for tag %s", field_tag_display)
+                break
 
             field_length = struct.unpack(">B", field_length_raw)[0]
 

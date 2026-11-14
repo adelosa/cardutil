@@ -80,7 +80,8 @@ class MideuTestCases(unittest.TestCase):
             )
             os.remove(config_filename)
 
-        csv_output = open(in_ipm_name + '.csv', 'r').read()
+        with open(in_ipm_name + '.csv', 'r') as csv_file:
+            csv_output = csv_file.read()
         self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')
@@ -113,7 +114,8 @@ class MideuTestCases(unittest.TestCase):
             )
             os.remove(config_filename)
 
-        csv_output = open(in_ipm_name + '.csv', 'r').read()
+        with open(in_ipm_name + '.csv', 'r') as csv_file:
+            csv_output = csv_file.read()
         self.assertEqual(csv_output, "MTI,DE38\n0100,nXmXlX\n")
         os.remove(in_ipm_name)
         os.remove(in_ipm_name + '.csv')

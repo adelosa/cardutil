@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -19,15 +19,15 @@ jobs:
       - name: Lint with flake8
         run: |
           # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
           # exit-zero treats all errors as warnings.
           flake8 . --count --exit-zero --statistics
       - name: Test with pytest
         run: |
-          pytest
+          pytest -W error
       - name: Test coverage
         run: |
-          coverage run -m pytest
+          coverage run -m pytest -W error
           coverage report --fail-under 95 -m
 
   build:
@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          python-version: '3.14'
       - uses: actions/checkout@v4
       - name: Install build
         run: python -m pip install --upgrade pip && python -m pip install build
