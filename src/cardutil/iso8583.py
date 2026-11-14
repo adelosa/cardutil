@@ -584,7 +584,6 @@ def _icc_to_dict(field_data, processor_config=None):
         except Exception:
             processor_config_dict = {}
 
-
     # Get error handling configuration from bit_config.
     DEFAULT_ERROR_HANDLING = 'WARN'
     on_error = (processor_config_dict.get('on_error') or DEFAULT_ERROR_HANDLING).upper()
