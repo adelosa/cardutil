@@ -48,10 +48,16 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-  publish:
+  publish-testpypi:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/cardutil
+    permissions:
+      id-token: write
+      actions: read
     steps:
       - name: Download dist packages
         uses: actions/download-artifact@v4
@@ -61,11 +67,22 @@ jobs:
       - name: Publish cardutil to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN_TEST }}
-          repository_url: https://test.pypi.org/legacy/
-      - name: Publish cardutil to PyPI (Production)
-        uses: pypa/gh-action-pypi-publish@release/v1
+          repository-url: https://test.pypi.org/legacy/
+
+  publish:
+    needs: publish-testpypi
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cardutil
+    permissions:
+      id-token: write
+      actions: read
+    steps:
+      - name: Download dist packages
+        uses: actions/download-artifact@v4
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+          name: python-package-distributions
+          path: dist/
+      - name: Publish cardutil to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
